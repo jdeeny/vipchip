@@ -1,6 +1,4 @@
-use core::{Chip8, Address};
-
-
+use chip8::{Chip8, Address};
 
 
 pub trait Opcode {

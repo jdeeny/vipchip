@@ -1,14 +1,43 @@
 extern crate sdl2;
 
-mod interface;
-mod core;
+use std::thread;
+use std::sync::{Arc, RwLock};
 
-use interface::{Interface, InterfaceSdl2};
-use core::Chip8;
+pub mod chip8;
+pub mod ui;
+pub mod emulator;
+
+
+use ui::Ui;
+use chip8::{ Vram, Keys, Audio };
+use emulator::Emulator;
+
+
 
 fn main() {
-    let mut core = Chip8::new();
-    let mut interface: &mut Interface = &mut InterfaceSdl2::new() as &mut Interface;
+
+    let vram = Arc::new(RwLock::new(Vram::new()));
+    let keys = Arc::new(RwLock::new(Keys::new()));
+    let audio = Arc::new(RwLock::new(Audio::new()));
+
+    let ui_vram = vram.clone();
+    let ui_keys = keys.clone();
+    let ui_audio = audio.clone();
+    let emulator_vram = vram.clone();
+    let emulator_keys = keys.clone();
+    let emulator_audio = audio.clone();
+
+
+    let ui_thread = thread::spawn(move || {
+        let mut ui = Ui::new(ui_vram, ui_keys, ui_audio);
+        ui.run();
+    });
+    let emulator_thread = thread::spawn(move || {
+        let mut emulator = Emulator::new(emulator_vram, emulator_keys, emulator_audio);
+        emulator.run();
+    });
+
+/*
 
     let test_program: Vec<u8> = vec![   //0x71, 0x24,
                                         0xC3, 0x1F, 0xC4, 0x0F, 0xA2, 0x30, 0xD3, 0x48,
@@ -31,15 +60,15 @@ fn main() {
 
         println!("{:X} {:?}", instruction.as_u16(), instruction.as_string());
 
-        core.set_key_state(interface.get_key_state());
+        //core.set_key_state(interface.get_key_state());
         instruction.execute(&mut core);
         core.advance_pc();
 
         core.dump_reg();
 //        core.dump_pixels();
-        interface.draw_screen(&core.pixels);
+//        interface.draw_screen(&core.pixels);
     }
 
-
+*/
 
 }

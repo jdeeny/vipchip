@@ -2,8 +2,35 @@ extern crate rand;
 use self::rand::{thread_rng, Rng};
 
 pub mod opcode;
-use core::opcode::{Opcode, decode_instruction};
+pub use self::opcode::{Opcode, decode_instruction};
 
+
+
+pub struct Vram {
+
+}
+impl Vram {
+    pub fn new() -> Vram {
+        Vram {}
+    }
+}
+
+pub struct Keys {
+
+}
+impl Keys {
+    pub fn new() -> Keys {
+        Keys {}
+    }
+}
+pub struct Audio {
+
+}
+impl Audio {
+    pub fn new() -> Audio {
+        Audio {}
+    }
+}
 
 pub type Address = usize;
 
