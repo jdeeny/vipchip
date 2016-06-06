@@ -39,7 +39,7 @@ impl Emulator {
             self.cpu.dump_reg();
             self.cpu.advance_pc();
             self.cpu.execute(&mut instruction);
-            thread::park_timeout_ms(5);
+            thread::park_timeout(Duration::new(0,50));
         }
     }
 

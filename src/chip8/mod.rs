@@ -52,7 +52,6 @@ pub struct Chip8 {
     sound_timer: u8,
     ram: [u8; 4 * 1024],
     stack: Vec<Address>,
-    font: [u8; 5 * 16],
     rng: Box<Rng>,
 }
 
@@ -71,6 +70,12 @@ impl Chip8 {
 
     pub fn new(vram: Arc<RwLock<Vram>>, keys: Arc<RwLock<Keys>>, audio: Arc<RwLock<Audio>>) -> Chip8 {
 
+        let mut ram = [0; 4 *1024];
+
+        for i in 0..FONT_4X5.len() {
+            ram[i] = FONT_4X5[i];
+        }
+
         Chip8 {
             vram: vram,
             keys: keys,
@@ -80,9 +85,8 @@ impl Chip8 {
             pc: 0,
             delay_timer: 0,
             sound_timer: 0,
-            ram: [0; 4 * 1024],
+            ram: ram,
             stack: vec!(),
-            font: FONT_4X5,
             //key_state: [false; 16],
             rng: Box::new(thread_rng()),
         }

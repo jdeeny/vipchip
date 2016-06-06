@@ -716,6 +716,62 @@ impl Opcode for OpAddIReg {
     }
 }
 
+struct OpLdIFont {
+    reg: usize
+}
+impl OpLdIFont {
+    fn new(reg: usize) -> OpLdIFont {
+        OpLdIFont {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpLdIFont {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        core.i = core.gp_reg[self.reg] as usize * 5;
+    }
+    fn as_u16(&self) -> u16 {
+        0xF01E | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("LdIFont[v{:X}]", self.reg).to_string()
+    }
+}
+
+
+
+struct OpBcd {
+    reg: usize
+}
+impl OpBcd {
+    fn new(reg: usize) -> OpBcd {
+        OpBcd {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpBcd {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        let mut value = core.gp_reg[self.reg];
+        let hundreds = value / 100;
+        value -= hundreds * 100;
+        let tens = value / 10;
+        value -= tens * 10;
+        core.ram[core.i] = hundreds;
+        core.ram[core.i+1] = tens;
+        core.ram[core.i+2] = value;
+    }
+    fn as_u16(&self) -> u16 {
+        0xF01E | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("Bcd[v{:X}]", self.reg).to_string()
+    }
+}
+
+
 struct OpSaveReg {
     reg: usize
 }
@@ -800,6 +856,8 @@ pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
         (0xF, reg, 0x1, 0x5) => Box::new(OpLdDtReg::new(reg as usize)),
         (0xF, reg, 0x1, 0x8) => Box::new(OpLdStReg::new(reg as usize)),
         (0xF, reg, 0x1, 0xE) => Box::new(OpAddIReg::new(reg as usize)),
+        (0xF, reg, 0x2, 0x9) => Box::new(OpLdIFont::new(reg as usize)),
+        (0xF, reg, 0x3, 0x3) => Box::new(OpBcd::new(reg as usize)),
         (0xF, reg, 0x5, 0x5) => Box::new(OpSaveReg::new(reg as usize)),
         (0xF, reg, 0x6, 0x5) => Box::new(OpRestoreReg::new(reg as usize)),
 

@@ -30,7 +30,7 @@ impl InterfaceSdl2 {
     pub fn new() -> InterfaceSdl2 {
         let sdl_context = sdl2::init().unwrap();
         let video_subsys = sdl_context.video().unwrap();
-        let window = video_subsys.window("chippy", WINDOW_WIDTH, WINDOW_HEIGHT)
+        let window = video_subsys.window("chipper", WINDOW_WIDTH, WINDOW_HEIGHT)
             .position_centered()
             .opengl()
             .build()
