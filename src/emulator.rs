@@ -35,11 +35,11 @@ impl Emulator {
 
             let mut instruction = self.cpu.decode_instruction(self.cpu.pc);
 
-            //println!("{:X}: {:X} {:?}", self.cpu.pc, instruction.as_u16(), instruction.as_string());
-            //self.cpu.dump_reg();
+            println!("{:X}: {:X} {:?}", self.cpu.pc, instruction.as_u16(), instruction.as_string());
+            self.cpu.dump_reg();
             self.cpu.advance_pc();
             self.cpu.execute(&mut instruction);
-            thread::park_timeout_ms(1);
+            thread::park_timeout_ms(5);
         }
     }
 

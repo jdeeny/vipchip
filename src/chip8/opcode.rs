@@ -716,6 +716,57 @@ impl Opcode for OpAddIReg {
     }
 }
 
+struct OpSaveReg {
+    reg: usize
+}
+impl OpSaveReg {
+    fn new(reg: usize) -> OpSaveReg {
+        OpSaveReg {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpSaveReg {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        for i in 0..(self.reg + 1) {
+            core.ram[core.i+i] = core.gp_reg[i];
+        }
+    }
+    fn as_u16(&self) -> u16 {
+        0xF055 | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("SaveReg[v{:X}]", self.reg).to_string()
+    }
+}
+
+struct OpRestoreReg {
+    reg: usize
+}
+impl OpRestoreReg {
+    fn new(reg: usize) -> OpRestoreReg {
+        OpRestoreReg {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpRestoreReg {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        for i in 0 .. (self.reg + 1) {
+            core.gp_reg[i] = core.ram[core.i+i];
+        }
+    }
+    fn as_u16(&self) -> u16 {
+        0xF065 | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("RestoreReg[v{:X}]", self.reg).to_string()
+    }
+}
+
+
 
 pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
 
@@ -749,6 +800,8 @@ pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
         (0xF, reg, 0x1, 0x5) => Box::new(OpLdDtReg::new(reg as usize)),
         (0xF, reg, 0x1, 0x8) => Box::new(OpLdStReg::new(reg as usize)),
         (0xF, reg, 0x1, 0xE) => Box::new(OpAddIReg::new(reg as usize)),
+        (0xF, reg, 0x5, 0x5) => Box::new(OpSaveReg::new(reg as usize)),
+        (0xF, reg, 0x6, 0x5) => Box::new(OpRestoreReg::new(reg as usize)),
 
         _ => Box::new(OpInvalid::new(instr_word)),
     };
