@@ -26,7 +26,6 @@ impl Keys {
         }
     }
     pub fn check(&self, key: usize) -> bool {
-        println!("Key check {:X}?{}", key, self.state[key] );
         self.state[key]
     }
 }
@@ -49,11 +48,10 @@ pub struct Chip8 {
     gp_reg: [u8; 16],
     i: Address,
     pub pc: Address,
-    sp: Address,
     delay_timer: u8,
     sound_timer: u8,
     ram: [u8; 4 * 1024],
-    stack: [Address; 256],
+    stack: Vec<Address>,
     font: [u8; 5 * 16],
     rng: Box<Rng>,
 }
@@ -80,11 +78,10 @@ impl Chip8 {
             gp_reg: [0; 16],
             i: 0,
             pc: 0,
-            sp: 0,
             delay_timer: 0,
             sound_timer: 0,
             ram: [0; 4 * 1024],
-            stack: [0; 256],
+            stack: vec!(),
             font: FONT_4X5,
             //key_state: [false; 16],
             rng: Box::new(thread_rng()),
@@ -137,7 +134,7 @@ impl Chip8 {
             print!("{:X} ", r);
         }
         println!("");
-        println!("i:{:X} pc:{:X} sp{:X}", self.i, self.pc, self.sp);
+        println!("i:{:X} pc:{:X} stack{}", self.i, self.pc, self.stack.len());
     }
     pub fn dump_pixels(&self) {
         let vram = self.vram.read().unwrap();

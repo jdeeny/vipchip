@@ -47,7 +47,7 @@ impl Ui {
                 },
                 _ => ()
             }
-            thread::sleep_ms(10);
+            thread::park_timeout_ms(50);
         }
     }
 }

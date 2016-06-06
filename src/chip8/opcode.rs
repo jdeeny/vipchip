@@ -70,6 +70,28 @@ impl Opcode for OpJmp {
     }
 }
 
+struct OpJmp0 {
+    dest: u16,
+}
+impl OpJmp0 {
+    fn new(addr: u16) -> OpJmp0 {
+        OpJmp0 { dest: addr & 0x0FFF }
+    }
+}
+impl Opcode for OpJmp0 {
+    fn execute(&mut self, core: &mut Chip8) {
+        let dest = self.dest as Address + core.gp_reg[0] as Address;
+        core.jump_pc(dest);
+    }
+    fn as_u16(&self) -> u16 {
+        0xB000 | self.dest
+    }
+    fn as_string(&self) -> String {
+        format!("Jmp0[0x{:X}]", self.dest).to_string()
+    }
+}
+
+
 struct OpCall {
     dest: u16,
 }
@@ -80,9 +102,8 @@ impl OpCall {
 }
 impl Opcode for OpCall {
     fn execute(&mut self, core: &mut Chip8) {
-        core.sp = core.sp + 1;
-        core.stack[core.sp as usize] = core.pc;
-        core.pc = self.dest as Address;
+        core.stack.push(core.pc as Address);
+        core.jump_pc(self.dest as Address);
     }
     fn as_u16(&self) -> u16 {
         0x2000 | self.dest
@@ -100,10 +121,8 @@ impl OpRet {
 }
 impl Opcode for OpRet {
     fn execute(&mut self, core: &mut Chip8) {
-        let sp = core.sp;
-        let addr = core.stack[sp];
-        core.jump_pc(addr);
-        core.sp -= 1;
+        let addr = core.stack.pop().unwrap();
+        core.jump_pc(addr as usize);
     }
 
     fn as_u16(&self) -> u16 {
@@ -511,6 +530,7 @@ impl Opcode for OpSprite {
         let mut i = core.i as usize;
         let mut pixels = core.vram.read().unwrap().pixels;
 
+        core.gp_reg[0xF] = 0;
         for _ in 0..self.n {
             let byte = core.ram[i];
             for bit in 0..8 {
@@ -518,6 +538,9 @@ impl Opcode for OpSprite {
                 let x_loc = ((x + bit) & 63) as usize;
                 let y_loc = (y & 31) as usize;
                 pixels[x_loc][y_loc] ^= pixel;
+                if pixels[x_loc][y_loc] == 0 && pixel == 1 {
+                    core.gp_reg[0xF] = 1;
+                }
             }
             i += 1;
             y += 1;
@@ -716,6 +739,7 @@ pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
         (0x8, dest, src, 0x6) => Box::new(OpShrReg::new(dest, src)),
 
         (0xA, hi, mid, lo) => Box::new(OpLdI::new(join_nibbles(&[hi, mid, lo]))),
+        (0xB, hi, mid, lo) => Box::new(OpJmp0::new(join_nibbles(&[hi, mid, lo]) as u16)),
 
         (0xC, dest, hi, lo) => Box::new(OpRand::new(dest, join_nibbles(&[hi, lo]) as u8)),
         (0xD, x, y, n) => Box::new(OpSprite::new(x as usize, y as usize, n as usize)),
