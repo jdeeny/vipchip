@@ -6,18 +6,18 @@ pub mod opcode;
 pub use self::opcode::{Opcode, decode_instruction};
 
 pub struct Vram {
-    pub pixels: [[u8; 64]; 32],
+    pub pixels: [[u8; 32]; 64],
 }
 impl Vram {
     pub fn new() -> Vram {
         Vram {
-            pixels: [[0; 64]; 32],
+            pixels: [[0; 32]; 64],
         }
     }
 }
 
 pub struct Keys {
-    state: [bool; 16],
+    pub state: [bool; 16],
 }
 impl Keys {
     pub fn new() -> Keys {
@@ -26,6 +26,7 @@ impl Keys {
         }
     }
     pub fn check(&self, key: usize) -> bool {
+        println!("Key check {:X}?{}", key, self.state[key] );
         self.state[key]
     }
 }
@@ -123,6 +124,11 @@ impl Chip8 {
 
     pub fn jump_pc(&mut self, addr: Address) {
         self.pc = addr;
+    }
+
+    pub fn decrement_timers(&mut self) {
+        if self.delay_timer > 0 { self.delay_timer -= 1; }
+        if self.sound_timer > 0 { self.sound_timer -= 1; }
     }
 
     pub fn dump_reg(&self) {

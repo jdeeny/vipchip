@@ -1,3 +1,4 @@
+use std::thread;
 use chip8::{Chip8, Address};
 
 
@@ -19,7 +20,7 @@ impl OpInvalid {
 }
 impl Opcode for OpInvalid {
     #[allow(unused_variables)]
-    fn execute(&mut self, core: &mut Chip8) {}
+    fn execute(&mut self, core: &mut Chip8) { thread::sleep_ms(1000);}
     fn as_u16(&self) -> u16 {
         self.instr_word
     }
@@ -38,7 +39,7 @@ impl Opcode for OpCls {
     fn execute(&mut self, core: &mut Chip8) {
         let mut vram = core.vram.write().unwrap();
 
-        vram.pixels = [[0; 64]; 32];
+        vram.pixels = [[0; 32]; 64];
     }
 
     fn as_u16(&self) -> u16 {
@@ -59,8 +60,7 @@ impl OpJmp {
 }
 impl Opcode for OpJmp {
     fn execute(&mut self, core: &mut Chip8) {
-        let adjusted_dest = self.dest as Address - 2;
-        core.jump_pc(adjusted_dest);
+        core.jump_pc(self.dest as Address);
     }
     fn as_u16(&self) -> u16 {
         0x1000 | self.dest
@@ -91,6 +91,29 @@ impl Opcode for OpCall {
         format!("Call[{:X}]", self.dest).to_string()
     }
 }
+
+struct OpRet { }
+impl OpRet {
+    fn new() -> OpRet {
+        OpRet {}
+    }
+}
+impl Opcode for OpRet {
+    fn execute(&mut self, core: &mut Chip8) {
+        let sp = core.sp;
+        let addr = core.stack[sp];
+        core.jump_pc(addr);
+        core.sp -= 1;
+    }
+
+    fn as_u16(&self) -> u16 {
+        0x00E0
+    }
+    fn as_string(&self) -> String {
+        "Ret".to_string()
+    }
+}
+
 
 struct OpSkipEqByte {
     reg: usize,
@@ -140,24 +163,24 @@ impl Opcode for OpSkipEqReg {
         0x5000 | (((self.rega as u16) & 0x0F) << 8) | ((self.regb as u16) & 0x0F) << 4
     }
     fn as_string(&self) -> String {
-        "SkipEqReg".to_string()
+        format!("SkipEqReg [v{:X}?=v{:X}]", self.rega, self.regb).to_string()
     }
 }
 
 
-struct OpSkipNotEqByte {
+struct OpSkipNeqByte {
     reg: u8,
     val: u8,
 }
-impl OpSkipNotEqByte {
-    fn new(instr_word: u16) -> OpSkipNotEqByte {
-        OpSkipNotEqByte {
+impl OpSkipNeqByte {
+    fn new(instr_word: u16) -> OpSkipNeqByte {
+        OpSkipNeqByte {
             reg: ((instr_word >> 8) & 0x0F) as u8,
             val: (instr_word & 0x00FF) as u8,
         }
     }
 }
-impl Opcode for OpSkipNotEqByte {
+impl Opcode for OpSkipNeqByte {
     fn execute(&mut self, core: &mut Chip8) {
         if core.gp_reg[self.reg as usize] != self.val {
             core.pc = core.pc + 2;
@@ -167,7 +190,7 @@ impl Opcode for OpSkipNotEqByte {
         0x4000 | ((self.reg as u16) << 8) | self.val as u16
     }
     fn as_string(&self) -> String {
-        "SkipNotEqByte".to_string()
+        format!("SkipNeqByte[v{:X}?={:X}]", self.reg, self.val).to_string()
     }
 }
 
@@ -216,7 +239,7 @@ impl Opcode for OpLdReg {
         0x8000 | ((self.dest as u16) << 8) | (self.src as u16) << 4
     }
     fn as_string(&self) -> String {
-        "LdReg".to_string()
+        format!("LdReg[v{:X}=v{:X}]", self.dest, self.src).to_string()
     }
 }
 
@@ -238,13 +261,13 @@ impl Opcode for OpAddByte {
     fn execute(&mut self, core: &mut Chip8) {
         let addend = core.gp_reg[self.reg as usize] as u32;
         let total = addend + (self.val as u32);
-        core.gp_reg[self.reg as usize] = total as u8;
+        core.gp_reg[self.reg as usize] = (total & 0xFF) as u8;
     }
     fn as_u16(&self) -> u16 {
         0x7000 | ((self.reg as u16) << 8) | self.val as u16
     }
     fn as_string(&self) -> String {
-        "AddByte".to_string()
+        format!("AddByte[v{:X}+={:X}]", self.reg, self.val).to_string()
     }
 }
 
@@ -481,16 +504,20 @@ impl OpSprite {
 }
 impl Opcode for OpSprite {
     fn execute(&mut self, core: &mut Chip8) {
-        let x = self.x;
-        let mut y = self.y;
-        let mut i = core.i;
-        let mut pixels = core.vram.read().unwrap().pixels.clone();
+        let x_reg = self.x;
+        let y_reg = self.y;
+        let x = core.gp_reg[x_reg] as usize;
+        let mut y = core.gp_reg[y_reg] as usize;
+        let mut i = core.i as usize;
+        let mut pixels = core.vram.read().unwrap().pixels;
 
         for _ in 0..self.n {
             let byte = core.ram[i];
             for bit in 0..8 {
-                let pixel = (byte >> bit) & 1;
-                pixels[x+bit][y] ^= pixel;
+                let pixel = if byte & (0x80 >> bit) == 0 { 0 } else { 1 };
+                let x_loc = ((x + bit) & 63) as usize;
+                let y_loc = (y & 31) as usize;
+                pixels[x_loc][y_loc] ^= pixel;
             }
             i += 1;
             y += 1;
@@ -618,16 +645,64 @@ impl Opcode for OpLdDtReg {
     }
 }
 
+struct OpLdStReg {
+    reg: usize
+}
+impl OpLdStReg {
+    fn new(reg: usize) -> OpLdStReg {
+        OpLdStReg {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpLdStReg {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        core.sound_timer = core.gp_reg[self.reg];
+    }
+    fn as_u16(&self) -> u16 {
+        0xF007 | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("LdStReg[v{:X}]", self.reg).to_string()
+    }
+}
+
+
+
+struct OpAddIReg {
+    reg: usize
+}
+impl OpAddIReg {
+    fn new(reg: usize) -> OpAddIReg {
+        OpAddIReg {
+            reg: reg
+        }
+    }
+}
+impl Opcode for OpAddIReg {
+    #[allow(dead_code)]
+    fn execute(&mut self, core: &mut Chip8) {
+        core.i += core.gp_reg[self.reg] as usize;
+    }
+    fn as_u16(&self) -> u16 {
+        0xF01E | (self.reg << 8) as u16
+    }
+    fn as_string(&self) -> String {
+        format!("AddIReg[v{:X}]", self.reg).to_string()
+    }
+}
 
 
 pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
 
     let op: Box<Opcode> = match split_nibbles_u16(instr_word) {
         (0x0, 0x0, 0xE, 0x0) => Box::new(OpCls::new()),
+        (0x0, 0x0, 0xE, 0xE) => Box::new(OpRet::new()),
         (0x1, hi, mid, lo) => Box::new(OpJmp::new(join_nibbles(&[hi, mid, lo]) as u16)),
         (0x2, _, _, _) => Box::new(OpCall::new(instr_word)),
         (0x3, reg, hi, lo) => Box::new(OpSkipEqByte::new(reg as usize, join_nibbles(&[hi, lo]) as u8)),
-        (0x4, _, _, _) => Box::new(OpSkipNotEqByte::new(instr_word)),
+        (0x4, _, _, _) => Box::new(OpSkipNeqByte::new(instr_word)),
         (0x5, _, _, 0x0) => Box::new(OpSkipEqReg::new(instr_word)),
         (0x6, dest, hi, lo) => Box::new(OpLdByte::new(dest, join_nibbles(&[hi, lo]) as u8)),
         (0x7, dest, hi, lo) => Box::new(OpAddByte::new(dest, join_nibbles(&[hi, lo]) as u8)),
@@ -648,6 +723,8 @@ pub fn decode_instruction(instr_word: u16) -> Box<Opcode> {
         (0xE, reg, 0xA, 0x1) => Box::new(OpSkipNkey::new(reg as usize)),
         (0xF, reg, 0x0, 0x7) => Box::new(OpLdRegDt::new(reg as usize)),
         (0xF, reg, 0x1, 0x5) => Box::new(OpLdDtReg::new(reg as usize)),
+        (0xF, reg, 0x1, 0x8) => Box::new(OpLdStReg::new(reg as usize)),
+        (0xF, reg, 0x1, 0xE) => Box::new(OpAddIReg::new(reg as usize)),
 
         _ => Box::new(OpInvalid::new(instr_word)),
     };
