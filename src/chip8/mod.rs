@@ -1,26 +1,32 @@
 extern crate rand;
 use self::rand::{thread_rng, Rng};
+use std::sync::{Arc, RwLock};
 
 pub mod opcode;
 pub use self::opcode::{Opcode, decode_instruction};
 
-
-
 pub struct Vram {
-
+    pub pixels: [[u8; 64]; 32],
 }
 impl Vram {
     pub fn new() -> Vram {
-        Vram {}
+        Vram {
+            pixels: [[0; 64]; 32],
+        }
     }
 }
 
 pub struct Keys {
-
+    state: [bool; 16],
 }
 impl Keys {
     pub fn new() -> Keys {
-        Keys {}
+        Keys {
+            state: [false; 16],
+        }
+    }
+    pub fn check(&self, key: usize) -> bool {
+        self.state[key]
     }
 }
 pub struct Audio {
@@ -36,6 +42,9 @@ pub type Address = usize;
 
 #[allow(dead_code)]
 pub struct Chip8 {
+    vram: Arc<RwLock<Vram>>,
+    keys: Arc<RwLock<Keys>>,
+    audio: Arc<RwLock<Audio>>,
     gp_reg: [u8; 16],
     i: Address,
     pub pc: Address,
@@ -44,9 +53,7 @@ pub struct Chip8 {
     sound_timer: u8,
     ram: [u8; 4 * 1024],
     stack: [Address; 256],
-    pub pixels: [[u8; 64]; 32],
     font: [u8; 5 * 16],
-    key_state: [bool; 16],
     rng: Box<Rng>,
 }
 
@@ -62,9 +69,13 @@ const FONT_4X5: [u8; 5 * 16] =
 
 
 impl Chip8 {
-    pub fn new() -> Chip8 {
+
+    pub fn new(vram: Arc<RwLock<Vram>>, keys: Arc<RwLock<Keys>>, audio: Arc<RwLock<Audio>>) -> Chip8 {
 
         Chip8 {
+            vram: vram,
+            keys: keys,
+            audio: audio,
             gp_reg: [0; 16],
             i: 0,
             pc: 0,
@@ -73,9 +84,8 @@ impl Chip8 {
             sound_timer: 0,
             ram: [0; 4 * 1024],
             stack: [0; 256],
-            pixels: [[0; 64]; 32],
             font: FONT_4X5,
-            key_state: [false; 16],
+            //key_state: [false; 16],
             rng: Box::new(thread_rng()),
         }
     }
@@ -115,10 +125,6 @@ impl Chip8 {
         self.pc = addr;
     }
 
-    pub fn set_key_state(&mut self, keys: [bool; 16]) {
-        self.key_state = keys;
-    }
-
     pub fn dump_reg(&self) {
         print!("Reg: ");
         for r in self.gp_reg.iter() {
@@ -128,11 +134,17 @@ impl Chip8 {
         println!("i:{:X} pc:{:X} sp{:X}", self.i, self.pc, self.sp);
     }
     pub fn dump_pixels(&self) {
-        for row in self.pixels.iter() {
+        let vram = self.vram.read().unwrap();
+
+        for row in vram.pixels.iter() {
             for dot in row.iter() {
                 print!("{:?}", dot);
             }
             println!("");
         }
+    }
+
+    pub fn execute(&mut self, instruction: &mut Box<Opcode> ) {
+        instruction.execute(self);
     }
 }

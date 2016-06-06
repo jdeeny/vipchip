@@ -3,7 +3,7 @@ use chip8::{Chip8, Address};
 
 pub trait Opcode {
     //    fn new(instr_word: u16) -> &Opcode;
-    fn execute(&self, &mut Chip8);
+    fn execute(&mut self, &mut Chip8);
     fn as_u16(&self) -> u16;
     fn as_string(&self) -> String;
 }
@@ -19,7 +19,7 @@ impl OpInvalid {
 }
 impl Opcode for OpInvalid {
     #[allow(unused_variables)]
-    fn execute(&self, core: &mut Chip8) {}
+    fn execute(&mut self, core: &mut Chip8) {}
     fn as_u16(&self) -> u16 {
         self.instr_word
     }
@@ -35,8 +35,10 @@ impl OpCls {
     }
 }
 impl Opcode for OpCls {
-    fn execute(&self, core: &mut Chip8) {
-        core.pixels = [[0; 64]; 32];
+    fn execute(&mut self, core: &mut Chip8) {
+        let mut vram = core.vram.write().unwrap();
+
+        vram.pixels = [[0; 64]; 32];
     }
 
     fn as_u16(&self) -> u16 {
@@ -56,7 +58,7 @@ impl OpJmp {
     }
 }
 impl Opcode for OpJmp {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         let adjusted_dest = self.dest as Address - 2;
         core.jump_pc(adjusted_dest);
     }
@@ -77,7 +79,7 @@ impl OpCall {
     }
 }
 impl Opcode for OpCall {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.sp = core.sp + 1;
         core.stack[core.sp as usize] = core.pc;
         core.pc = self.dest as Address;
@@ -103,7 +105,7 @@ impl OpSkipEqByte {
     }
 }
 impl Opcode for OpSkipEqByte {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         if core.gp_reg[self.reg] == self.val {
             core.advance_pc();
         }
@@ -129,7 +131,7 @@ impl OpSkipEqReg {
     }
 }
 impl Opcode for OpSkipEqReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         if core.gp_reg[self.rega as usize] == core.gp_reg[self.regb as usize] {
             core.pc = core.pc + 2;
         }
@@ -156,7 +158,7 @@ impl OpSkipNotEqByte {
     }
 }
 impl Opcode for OpSkipNotEqByte {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         if core.gp_reg[self.reg as usize] != self.val {
             core.pc = core.pc + 2;
         }
@@ -183,7 +185,7 @@ impl OpLdByte {
     }
 }
 impl Opcode for OpLdByte {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.reg as usize] = self.val;
     }
     fn as_u16(&self) -> u16 {
@@ -207,7 +209,7 @@ impl OpLdReg {
     }
 }
 impl Opcode for OpLdReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.dest as usize] = core.gp_reg[self.src as usize];
     }
     fn as_u16(&self) -> u16 {
@@ -233,7 +235,7 @@ impl OpAddByte {
     }
 }
 impl Opcode for OpAddByte {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         let addend = core.gp_reg[self.reg as usize] as u32;
         let total = addend + (self.val as u32);
         core.gp_reg[self.reg as usize] = total as u8;
@@ -259,7 +261,7 @@ impl OpAddReg {
     }
 }
 impl Opcode for OpAddReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
 
         let initial: u32 = core.gp_reg[self.dest as usize] as u32;
         let addend: u32 = core.gp_reg[self.src as usize] as u32;
@@ -293,7 +295,7 @@ impl OpOrReg {
     }
 }
 impl Opcode for OpOrReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.dest as usize] = core.gp_reg[self.dest as usize] |
                                           core.gp_reg[self.src as usize];
     }
@@ -319,7 +321,7 @@ impl OpAndReg {
     }
 }
 impl Opcode for OpAndReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.dest as usize] = core.gp_reg[self.dest as usize] &
                                           core.gp_reg[self.src as usize];
     }
@@ -345,7 +347,7 @@ impl OpXorReg {
     }
 }
 impl Opcode for OpXorReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         let result = core.gp_reg[self.dest] | core.gp_reg[self.src];
         core.set_reg(self.dest, result as u8);
     }
@@ -371,7 +373,7 @@ impl OpSubReg {
     }
 }
 impl Opcode for OpSubReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.dest as usize] = core.gp_reg[self.dest as usize] -
                                           core.gp_reg[self.src as usize];
     }
@@ -396,7 +398,7 @@ impl OpShrReg {
     }
 }
 impl Opcode for OpShrReg {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
 
         let initial: u32 = core.gp_reg[self.dest] as u32;
         let shift: u32 = core.gp_reg[self.src] as u32;
@@ -430,7 +432,7 @@ impl OpRand {
     }
 }
 impl Opcode for OpRand {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.reg as usize] = (core.rng.next_u64() as u8) & self.mask;
     }
     fn as_u16(&self) -> u16 {
@@ -452,7 +454,7 @@ impl OpLdI {
     }
 }
 impl Opcode for OpLdI {
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.i = (self.addr & 0x0FFF) as Address;
     }
     fn as_u16(&self) -> u16 {
@@ -478,21 +480,24 @@ impl OpSprite {
     }
 }
 impl Opcode for OpSprite {
-    #[allow(dead_code)]
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         let x = self.x;
         let mut y = self.y;
         let mut i = core.i;
+        let mut pixels = core.vram.read().unwrap().pixels.clone();
 
         for _ in 0..self.n {
             let byte = core.ram[i];
             for bit in 0..8 {
                 let pixel = (byte >> bit) & 1;
-                core.pixels[x+bit][y] ^= pixel;
+                pixels[x+bit][y] ^= pixel;
             }
             i += 1;
             y += 1;
         }
+
+        let mut vram = core.vram.write().unwrap();
+        vram.pixels = pixels;
 
     }
     fn as_u16(&self) -> u16 {
@@ -514,8 +519,18 @@ impl OpSkipKey {
     }
 }
 impl Opcode for OpSkipKey {
-    #[allow(dead_code)]
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
+        let mut key_state = false;
+        {
+            let keys = core.keys.read().unwrap();
+            let n = core.gp_reg[self.reg];
+            if keys.check(n as usize) {
+                key_state = true;
+            }
+        }
+        if key_state {
+            core.advance_pc();
+        }
     }
     fn as_u16(&self) -> u16 {
         0xE09E | (self.reg << 8) as u16
@@ -536,9 +551,18 @@ impl OpSkipNkey {
     }
 }
 impl Opcode for OpSkipNkey {
-    #[allow(dead_code)]
-    fn execute(&self, core: &mut Chip8) {
-        core.advance_pc();
+    fn execute(&mut self, core: &mut Chip8) {
+        let mut key_state = false;
+        {
+            let keys = core.keys.read().unwrap();
+            let n = core.gp_reg[self.reg];
+            if keys.check(n as usize) {
+                key_state = true;
+            }
+        }
+        if !key_state {
+            core.advance_pc();
+        }
     }
     fn as_u16(&self) -> u16 {
         0xE09E | (self.reg << 8) as u16
@@ -560,7 +584,7 @@ impl OpLdRegDt {
 }
 impl Opcode for OpLdRegDt {
     #[allow(dead_code)]
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.gp_reg[self.reg] = core.delay_timer;
     }
     fn as_u16(&self) -> u16 {
@@ -583,7 +607,7 @@ impl OpLdDtReg {
 }
 impl Opcode for OpLdDtReg {
     #[allow(dead_code)]
-    fn execute(&self, core: &mut Chip8) {
+    fn execute(&mut self, core: &mut Chip8) {
         core.delay_timer = core.gp_reg[self.reg];
     }
     fn as_u16(&self) -> u16 {

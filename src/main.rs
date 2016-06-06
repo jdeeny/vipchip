@@ -1,7 +1,10 @@
+#![feature(mpsc_select)]
+
 extern crate sdl2;
 
 use std::thread;
 use std::sync::{Arc, RwLock};
+use std::sync::mpsc;
 
 pub mod chip8;
 pub mod ui;
@@ -16,6 +19,10 @@ use emulator::Emulator;
 
 fn main() {
 
+    let (tx_ui, rx_ui) = mpsc::channel();
+    let (tx_emulator, rx_emulator) = mpsc::channel();
+
+
     let vram = Arc::new(RwLock::new(Vram::new()));
     let keys = Arc::new(RwLock::new(Keys::new()));
     let audio = Arc::new(RwLock::new(Audio::new()));
@@ -27,17 +34,11 @@ fn main() {
     let emulator_keys = keys.clone();
     let emulator_audio = audio.clone();
 
-
     let ui_thread = thread::spawn(move || {
         let mut ui = Ui::new(ui_vram, ui_keys, ui_audio);
         ui.run();
+        tx_ui.send(0).unwrap();
     });
-    let emulator_thread = thread::spawn(move || {
-        let mut emulator = Emulator::new(emulator_vram, emulator_keys, emulator_audio);
-        emulator.run();
-    });
-
-/*
 
     let test_program: Vec<u8> = vec![   //0x71, 0x24,
                                         0xC3, 0x1F, 0xC4, 0x0F, 0xA2, 0x30, 0xD3, 0x48,
@@ -49,26 +50,21 @@ fn main() {
                                         0x70, 0x70, 0x20, 0x70, 0xA8, 0x20, 0x50, 0x50,
                                     ];
 
-    core.load_hex(&test_program, 0x200);
-    core.pc = 0x200;
 
-    core.dump_reg();
-//    core.dump_pixels();
 
-    for _ in 0..2000 {
-        let instruction = core.decode_instruction(core.pc);
+    let emulator_thread = thread::spawn(move || {
+        let mut emulator = Emulator::new(emulator_vram, emulator_keys, emulator_audio);
+        emulator.cpu.load_hex(&test_program, 0x200);
+        emulator.cpu.jump_pc(0x200);
+        emulator.run();
+        tx_emulator.send(()).unwrap();
+    });
 
-        println!("{:X} {:?}", instruction.as_u16(), instruction.as_string());
+    select! {
+        _ = rx_emulator.recv() => println!("emulator"),
+        v = rx_ui.recv() => println!("ui: {}", v.unwrap())
+        }
 
-        //core.set_key_state(interface.get_key_state());
-        instruction.execute(&mut core);
-        core.advance_pc();
-
-        core.dump_reg();
-//        core.dump_pixels();
-//        interface.draw_screen(&core.pixels);
-    }
-
-*/
+    //thread::sleep(std::time::Duration::new(5, 0));
 
 }
