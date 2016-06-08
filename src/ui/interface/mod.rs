@@ -8,7 +8,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 
 use std::sync::{Arc, RwLock};
-use chip8::{Vram, Keys, Audio};
+use chip8::{SharedState};
 
 const WINDOW_WIDTH: u32 = 10 * 64;
 const WINDOW_HEIGHT: u32 = 10 * 32;
@@ -17,7 +17,7 @@ const WINDOW_HEIGHT: u32 = 10 * 32;
 pub trait Interface {
     fn draw_screen(&mut self, pixels: &[[u8; 32]; 64]);
     //fn get_key_state(&self) -> [bool; 16];
-    fn handle_input(&mut self, &mut Arc<RwLock<Keys>>) -> bool;
+    fn handle_input(&mut self, state: &mut SharedState) -> bool;
 }
 
 
@@ -30,7 +30,7 @@ impl InterfaceSdl2 {
     pub fn new() -> InterfaceSdl2 {
         let sdl_context = sdl2::init().unwrap();
         let video_subsys = sdl_context.video().unwrap();
-        let window = video_subsys.window("chipper", WINDOW_WIDTH, WINDOW_HEIGHT)
+        let window = video_subsys.window("chipr", WINDOW_WIDTH, WINDOW_HEIGHT)
             .position_centered()
             .opengl()
             .build()
@@ -72,7 +72,7 @@ impl Interface for InterfaceSdl2 {
     //    [false; 16]
     //}
 
-    fn handle_input(&mut self, keys: &mut Arc<RwLock<Keys>>) -> bool {
+    fn handle_input(&mut self, state: &mut SharedState) -> bool {
         let mut events = self.sdl_context.event_pump().unwrap();
         for event in events.poll_iter() {
             match event {
@@ -105,7 +105,7 @@ impl Interface for InterfaceSdl2 {
                 _ => ()
             }
         }
-        keys.write().unwrap().state = key_state;
+        state.keys.write().unwrap().state = key_state;
         false
     }
 

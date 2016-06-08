@@ -1,4 +1,5 @@
 #![feature(mpsc_select)]
+#![feature(box_syntax)]
 
 extern crate sdl2;
 extern crate rand;
@@ -15,12 +16,13 @@ use std::io::Read;
 pub mod chip8;
 pub mod ui;
 pub mod emulator;
-
+mod fileio;
 
 use ui::Ui;
-use chip8::{ Vram, Keys, Audio };
-use emulator::Emulator;
+use chip8::state::{ SharedState, Vram, Keyboard, Audio };
 
+use emulator::Emulator;
+use fileio::{Loader, load_file, LoaderType};
 
 
 fn main() {
@@ -30,18 +32,14 @@ fn main() {
 
 
     let vram = Arc::new(RwLock::new(Vram::new()));
-    let keys = Arc::new(RwLock::new(Keys::new()));
+    let keyboard = Arc::new(RwLock::new(Keyboard::new()));
     let audio = Arc::new(RwLock::new(Audio::new()));
 
-    let ui_vram = vram.clone();
-    let ui_keys = keys.clone();
-    let ui_audio = audio.clone();
-    let emulator_vram = vram.clone();
-    let emulator_keys = keys.clone();
-    let emulator_audio = audio.clone();
+    let ui_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };
+    let emulator_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };
 
     let ui_thread = thread::spawn(move || {
-        let mut ui = Ui::new(ui_vram, ui_keys, ui_audio);
+        let mut ui = Ui::new(ui_state);
         ui.run();
         tx_ui.send(0).unwrap();
     });
@@ -60,12 +58,14 @@ fn main() {
     programs.insert("bigfont", vec![0x00, 0xFF, 0xF0, 0x30, 0xD1, 0x2A, 0x71, 0x09, 0x70, 0x01, 0x40, 0x08, 0x61, 0x00, 0x40, 0x08, 0x72, 0x0B, 0x30, 0x10, 0x12, 0x02, 0x12, 0x16]);
 
 
-    //let mut test_program = programs.get("monitor").unwrap().clone();
+    let mut test_program = programs.get("monitor").unwrap().clone();
 
-    let mut test_program = Vec::new();
-    let mut in_file = File::open("examples/tank.ch8").unwrap();
+    //let mut test_program = Vec::new();
+    //let mut in_file = File::open("examples/tank.ch8").unwrap();
 
-    in_file.read_to_end(&mut test_program);
+    //let loader = BinaryLoader::new(in_file);
+
+    //let test_program = load_file("examples/tank.ch8", LoaderType::Auto);
 
     print!("[");
     for b in test_program.iter() {
@@ -74,9 +74,10 @@ fn main() {
     println!("]");
 
     let emulator_thread = thread::spawn(move || {
-        let mut emulator = Emulator::new(emulator_vram, emulator_keys, emulator_audio);
-        emulator.cpu.load_hex(&test_program, 0x200);
-        emulator.cpu.jump_pc(0x200);
+        let mut emulator = Emulator::new(emulator_state);
+        let load_offset = 0x200;
+        emulator.core.load_hex(&test_program, load_offset);
+        emulator.core.jump_pc(load_offset);
         emulator.run();
         tx_emulator.send(()).unwrap();
     });

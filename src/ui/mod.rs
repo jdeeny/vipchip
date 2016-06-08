@@ -2,7 +2,7 @@ pub mod interface;
 
 use std::thread;
 
-use chip8::{Vram, Keys, Audio};
+use chip8::{SharedState};
 
 use self::interface::{Interface, InterfaceSdl2};
 use std::sync::{Arc, RwLock};
@@ -10,18 +10,14 @@ use std::thread::sleep;
 use std::time::{Duration,SystemTime};
 
 pub struct Ui {
-    vram: Arc<RwLock<Vram>>,
-    keys: Arc<RwLock<Keys>>,
-    audio: Arc<RwLock<Audio>>,
+    state: SharedState,
     interface: Box<Interface>,
 }
 
 impl Ui {
-    pub fn new(vram: Arc<RwLock<Vram>>, keys: Arc<RwLock<Keys>>, audio: Arc<RwLock<Audio>>) -> Ui {
+    pub fn new(state: SharedState) -> Ui {
         Ui {
-            vram: vram,
-            keys: keys,
-            audio: audio,
+            state: state,
             interface: Box::new(InterfaceSdl2::new())
         }
     }
@@ -31,7 +27,7 @@ impl Ui {
         let mut last_frame = SystemTime::now();
         'running: loop {
             {
-                match self.interface.handle_input(&mut self.keys) {
+                match self.interface.handle_input(&mut self.state) {
                     true => break 'running,
                     _ => ()
                 }
@@ -39,7 +35,7 @@ impl Ui {
             match last_frame.elapsed() {
                 Ok(elapsed) => {
                     if elapsed > frame_period {
-                        let vram = self.vram.read().unwrap();
+                        let vram = self.state.vram.read().unwrap();
                         let pixels = vram.pixels;
                         self.interface.draw_screen(&pixels);
                         last_frame += frame_period;

@@ -1,19 +1,19 @@
 use std::thread;
 
-use chip8::{Vram, Keys, Audio, Chip8 };
+use chip8::{ Chip8, SharedState, Instruction };
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
 pub struct Emulator {
-    pub cpu: Chip8,
+    pub core: Chip8,
 }
 
 impl Emulator {
-    pub fn new(vram: Arc<RwLock<Vram>>, keys: Arc<RwLock<Keys>>, audio: Arc<RwLock<Audio>>) -> Emulator {
-        let cpu = Chip8::new(vram, keys, audio);
+    pub fn new(state: SharedState) -> Emulator {
+        let core = Chip8::new(state);
 
         Emulator {
-            cpu: cpu,
+            core: core,
         }
     }
 
@@ -27,18 +27,21 @@ impl Emulator {
                   Ok(elapsed) => {
                     if elapsed > tick {
                         last_timer_tick += tick;
-                        self.cpu.decrement_timers();
+                        self.core.decrement_timers();
                     }
                   }
                   Err(_) => ()
               }
 
-            let mut instruction = self.cpu.decode_instruction(self.cpu.pc);
+            let mut instruction: Instruction = self.core.decode_instruction(self.core.pc());
+            {
+                //println!("{:X}: {:X} {}", self.core.pc(), instruction.as_word(), instruction.as_string());
+                self.core.dump_reg();
+            }
 
-            println!("{:X}: {:X} {:?}", self.cpu.pc, instruction.as_u16(), instruction.as_string());
-            self.cpu.dump_reg();
-            self.cpu.advance_pc();
-            self.cpu.execute(&mut instruction);
+            self.core.advance_pc();
+            instruction.execute(&mut self.core);
+
             thread::park_timeout(Duration::new(0,50));
         }
     }

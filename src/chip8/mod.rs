@@ -1,85 +1,45 @@
 extern crate rand;
 use self::rand::{thread_rng, Rng};
-use std::sync::{Arc, RwLock};
 
+pub use self::operand::{ Operand };
+use chip8::operand::Operand::*;
+pub use self::instruction::{ Instruction, Word };
+pub use self::opcode::{ Opcode };
+pub use self::font::FONT_CHIP8_4X5;
+pub use self::state::SharedState;
+
+pub mod operand;
+mod instruction;
 pub mod opcode;
-pub use self::opcode::{Opcode, decode_instruction};
+mod font;
+pub mod state;
 
-pub struct Vram {
-    pub pixels: [[u8; 32]; 64],
-}
-impl Vram {
-    pub fn new() -> Vram {
-        Vram {
-            pixels: [[0; 32]; 64],
-        }
-    }
-}
 
-pub struct Keys {
-    pub state: [bool; 16],
-}
-impl Keys {
-    pub fn new() -> Keys {
-        Keys {
-            state: [false; 16],
-        }
-    }
-    pub fn check(&self, key: usize) -> bool {
-        self.state[key]
-    }
-}
-pub struct Audio {
-
-}
-impl Audio {
-    pub fn new() -> Audio {
-        Audio {}
-    }
-}
-
-pub type Address = usize;
-
-#[allow(dead_code)]
 pub struct Chip8 {
-    vram: Arc<RwLock<Vram>>,
-    keys: Arc<RwLock<Keys>>,
-    audio: Arc<RwLock<Audio>>,
+    state: SharedState,
     gp_reg: [u8; 16],
-    i: Address,
-    pub pc: Address,
+    i: usize,
+    pc: usize,
     delay_timer: u8,
     sound_timer: u8,
     ram: [u8; 4 * 1024],
-    stack: Vec<Address>,
+    stack: Vec<usize>,
     rng: Box<Rng>,
 }
 
-const FONT_4X5: [u8; 5 * 16] =
-    [0xF0, 0x90, 0x90, 0x90, 0xF0 /* 0 */, 0x20, 0x60, 0x20, 0x20, 0x70 /* 1 */, 0xF0, 0x10,
-     0xF0, 0x80, 0xF0 /* 2 */, 0xF0, 0x10, 0xF0, 0x10, 0xF0 /* 3 */, 0x90, 0x90, 0xF0, 0x10,
-     0x10 /* 4 */, 0xF0, 0x80, 0xF0, 0x10, 0xF0 /* 5 */, 0xF0, 0x80, 0xF0, 0x90,
-     0xF0 /* 6 */, 0xF0, 0x10, 0x20, 0x40, 0x40 /* 7 */, 0xF0, 0x90, 0xF0, 0x90,
-     0xF0 /* 8 */, 0xF0, 0x90, 0xF0, 0x10, 0xF0 /* 9 */, 0xF0, 0x90, 0xF0, 0x90,
-     0x90 /* A */, 0xE0, 0x90, 0xE0, 0x90, 0xE0 /* B */, 0xF0, 0x80, 0x80, 0x80,
-     0xF0 /* C */, 0xE0, 0x90, 0x90, 0x90, 0xE0 /* D */, 0xF0, 0x80, 0xF0, 0x80,
-     0xF0 /* E */, 0xF0, 0x80, 0xF0, 0x80, 0x80 /* F */];
 
 
 impl Chip8 {
 
-    pub fn new(vram: Arc<RwLock<Vram>>, keys: Arc<RwLock<Keys>>, audio: Arc<RwLock<Audio>>) -> Chip8 {
-
+    pub fn new(state: SharedState) -> Chip8 {
+        let font = &FONT_CHIP8_4X5;
         let mut ram = [0; 4 *1024];
 
-        for i in 0..FONT_4X5.len() {
-            ram[i] = FONT_4X5[i];
-        }
+        //copy font to beginning of RAM, into the 0-0x200 area
+        ram[0..font.len()].copy_from_slice(font);
 
         Chip8 {
-            vram: vram,
-            keys: keys,
-            audio: audio,
+            state: state,
             gp_reg: [0; 16],
             i: 0,
             pc: 0,
@@ -87,27 +47,24 @@ impl Chip8 {
             sound_timer: 0,
             ram: ram,
             stack: vec!(),
-            //key_state: [false; 16],
             rng: Box::new(thread_rng()),
         }
     }
 
-    pub fn load_hex(&mut self, bytes: &Vec<u8>, loc: Address) {
-        let mut i = loc;
+    pub fn load_hex(&mut self, bytes: &Vec<u8>, addr: usize) {
+        let mut i = addr;
         for b in bytes {
             self.ram[i] = *b;
             i += 1;
         }
     }
 
-    pub fn decode_instruction(&self, addr: Address) -> Box<Opcode> {
+    pub fn decode_instruction(&self, addr: usize) -> Instruction {
         let hi = self.ram[addr];
         let lo = self.ram[addr + 1];
-        let instr = (hi as u16) << 8 | lo as u16;
+        let word = (hi as u16) << 8 | lo as u16;
 
-        let opcode = decode_instruction(instr);
-
-        opcode
+        Instruction::from_word(word)
     }
 
     pub fn set_reg(&mut self, reg: usize, val: u8) {
@@ -119,11 +76,19 @@ impl Chip8 {
     pub fn vf_set(&mut self) {
         self.gp_reg[0xF] = 1;
     }
+
+    pub fn store_vf_flag(&mut self, flag: bool) {
+        self.gp_reg[0xF] = if flag { 1 } else { 0 };
+    }
+
+    pub fn pc(&self) -> usize {
+        self.pc
+    }
     pub fn advance_pc(&mut self) {
         self.pc += 2;
     }
 
-    pub fn jump_pc(&mut self, addr: Address) {
+    pub fn jump_pc(&mut self, addr: usize) {
         self.pc = addr;
     }
 
@@ -132,16 +97,43 @@ impl Chip8 {
         if self.sound_timer > 0 { self.sound_timer -= 1; }
     }
 
+    pub fn load_operand(&self, src: Operand) -> u32 {
+        match src {
+            Operand::Register(r)        => self.gp_reg[r] as u32,
+            Operand::Address(a)         => self.ram[a] as u32,
+            Operand::I                  => self.i as u32,
+            Operand::ByteLiteral(b)     => b as u32,
+            Operand::NibbleLiteral(n)   => (n & 0x0F) as u32,
+            Operand::SoundTimer         => self.sound_timer as u32,
+            Operand::DelayTimer         => self.delay_timer as u32,
+            Operand::No                 => panic!("Cannot load"),
+        }
+    }
+
+    pub fn store_operand(&mut self, dest: Operand, val: u32) {
+        match dest {
+            Operand::Register(r)         => { self.gp_reg[r] = (val & 0xFF) as u8; },
+            Operand::Address(a)          => { self.ram[a] = (val & 0xFF) as u8; },
+            Operand::I                   => { self.i = (val & 0xFFFF) as usize; },
+            Operand::ByteLiteral(_) |
+            Operand::NibbleLiteral(_)    => { panic!("Cannot store a literal."); },
+            Operand::SoundTimer         => { self.sound_timer = val as u8; },
+            Operand::DelayTimer            => { self.delay_timer = val as u8; },
+            Operand::No                 => { panic!("cannot store"); }
+        }
+    }
+
+
     pub fn dump_reg(&self) {
         print!("Reg: ");
         for r in self.gp_reg.iter() {
             print!("{:X} ", r);
         }
         println!("");
-        println!("i:{:X} pc:{:X} stack{}", self.i, self.pc, self.stack.len());
+        //println!("i:{:X} pc:{:X} stack{}", self.i, self.pc, self.stack.len());
     }
     pub fn dump_pixels(&self) {
-        let vram = self.vram.read().unwrap();
+        let vram = self.state.vram.read().unwrap();
 
         for row in vram.pixels.iter() {
             for dot in row.iter() {
@@ -151,7 +143,7 @@ impl Chip8 {
         }
     }
 
-    pub fn execute(&mut self, instruction: &mut Box<Opcode> ) {
+    pub fn execute(&mut self, instruction: &mut Instruction ) {
         instruction.execute(self);
     }
 }
