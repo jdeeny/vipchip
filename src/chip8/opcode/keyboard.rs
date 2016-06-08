@@ -1,53 +1,58 @@
+use chip8::{ Chip8, Opcode, Word };
+use chip8::operand::{ Operand, operand_to_string };
+use chip8::operand::Operand::{ Register, No };
 
-struct OpSkipKey {
-    reg: usize
-}
-impl OpSkipKey {
-    fn new(reg: usize) -> OpSkipKey {
-        OpSkipKey {
-            reg: reg
-        }
-    }
-}
+
+pub struct OpSkipKey { }
 impl Opcode for OpSkipKey {
-    fn execute(&mut self, core: &mut Chip8) {
+    #[allow(unused_variables)]
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpSkipKey { } ) }
+    fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) {
+        let key_reg = match (dest, src) {
+            (Register(_),   No)             => core.load_operand(dest),
+            (_,             _)              => panic!("Invalid SkipKey"),
+        };
+
         let mut key_state = false;
         {
-            let keys = core.keys.read().unwrap();
-            let n = core.gp_reg[self.reg];
-            if keys.check(n as usize) {
+            let n = core.gp_reg[key_reg as usize];
+            let keys = core.state.keys.read().unwrap();
+            if keys.is_down(n as usize) {
                 key_state = true;
             }
         }
         if key_state {
             core.advance_pc();
         }
+
     }
-    fn as_u16(&self) -> u16 {
-        0xE09E | (self.reg << 8) as u16
+    fn to_word(&self, dest: Operand, src: Operand) -> Word {
+        match (dest, src) {
+            (Register(reg),   No)           => 0xE09E | (reg << 8) as Word,
+            (_,             _)              => { panic!("Invalid SkipKey"); },
+        }
     }
-    fn as_string(&self) -> String {
-        format!("SkipKey[v{:X}]", self.reg).to_string()
+    #[allow(unused_variables)]
+    fn to_string(&self, dest: Operand, src: Operand) -> String {
+        format!("SkipKey: key[{}]?", operand_to_string(dest)).to_string()
     }
 }
 
-struct OpSkipNkey {
-    reg: usize
-}
-impl OpSkipNkey {
-    fn new(reg: usize) -> OpSkipNkey {
-        OpSkipNkey {
-            reg: reg
-        }
-    }
-}
+pub struct OpSkipNkey { }
 impl Opcode for OpSkipNkey {
-    fn execute(&mut self, core: &mut Chip8) {
+    #[allow(unused_variables)]
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpSkipNkey { } ) }
+    fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) {
+        let key_reg = match (dest, src) {
+            (Register(_),   No)             => core.load_operand(dest),
+            (_,             _)              => { panic!("Invalid SkipKey"); },
+        };
+
         let mut key_state = false;
         {
-            let keys = core.keys.read().unwrap();
-            let n = core.gp_reg[self.reg];
-            if keys.check(n as usize) {
+            let keys = core.state.keys.read().unwrap();
+            let n = core.gp_reg[key_reg as usize];
+            if !keys.is_down(n as usize) {
                 key_state = true;
             }
         }
@@ -55,10 +60,14 @@ impl Opcode for OpSkipNkey {
             core.advance_pc();
         }
     }
-    fn as_u16(&self) -> u16 {
-        0xE09E | (self.reg << 8) as u16
+    fn to_word(&self, dest: Operand, src: Operand) -> Word {
+        match (dest, src) {
+            (Register(reg),   No)           => 0xE0A1 | (reg << 8) as u16,
+            (_,             _)              => panic!("Invalid SkipNkey"),
+        }
     }
-    fn as_string(&self) -> String {
-        format!("SkipNkey[v{:X}]", self.reg).to_string()
+    #[allow(unused_variables)]
+    fn to_string(&self, dest: Operand, src: Operand) -> String {
+        format!("SkipNkey[{}]", operand_to_string(dest)).to_string()
     }
 }

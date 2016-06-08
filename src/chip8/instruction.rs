@@ -1,5 +1,5 @@
 use chip8::{ Chip8, Operand };
-use chip8::operand::Operand::{ Register, ByteLiteral, I, Indirect };
+use chip8::operand::Operand::{ Register, ByteLiteral, I, Indirect, No };
 
 use chip8::opcode::*;
 
@@ -59,8 +59,8 @@ fn decode_instruction_word(word: Word) -> Instruction {
         //(0xB, hi, mid, lo) => Box::new(OpJmp0::new(join_nibbles(&[hi, mid, lo]) as u16)),
         (0xC, dest, hi, lo) => Instruction::new(OpRand::new(word), Register(dest), ByteLiteral(join_nibbles(&[hi, lo]))),
         //(0xD, x, y, n) => Box::new(OpSprite::new(x as usize, y as usize, n as usize)),
-        //(0xE, reg, 0x9, 0xE) => Box::new(OpSkipKey::new(reg as usize)),
-        //(0xE, reg, 0xA, 0x1) => Box::new(OpSkipNkey::new(reg as usize)),
+        (0xE, reg, 0x9, 0xE) => Instruction::new(OpSkipKey::new(word), Register(reg), No),
+        (0xE, reg, 0xA, 0x1) => Instruction::new(OpSkipNkey::new(word), Register(reg), No),
         //(0xF, reg, 0x0, 0x7) => Box::new(OpLdRegDt::new(reg as usize)),
         //(0xF, reg, 0x1, 0x5) => Box::new(OpLdDtReg::new(reg as usize)),
         //(0xF, reg, 0x1, 0x8) => Box::new(OpLdStReg::new(reg as usize)),

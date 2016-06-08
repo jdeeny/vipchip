@@ -4,11 +4,12 @@ use chip8::{ Chip8, Operand, Instruction, Word };
 use chip8::operand::Operand::{ Register, Address, };
 
 pub use self::math::*;
+pub use self::keyboard::*;
 
 //mod comparison;
 //mod display;
 //mod flowcontrol;
-//mod keyboard;
+mod keyboard;
 mod math;
 //mod memory;
 

@@ -1,6 +1,7 @@
 #![feature(mpsc_select)]
 #![feature(box_syntax)]
 
+
 extern crate sdl2;
 extern crate rand;
 
@@ -34,6 +35,7 @@ fn main() {
     let vram = Arc::new(RwLock::new(Vram::new()));
     let keyboard = Arc::new(RwLock::new(Keyboard::new()));
     let audio = Arc::new(RwLock::new(Audio::new()));
+
 
     let ui_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };
     let emulator_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };

@@ -6,6 +6,7 @@ pub struct SharedState {
     pub audio: Arc<RwLock<Audio>>,
 }
 
+
 pub struct Vram {
     pub pixels: [[u8; 32]; 64],
 }
