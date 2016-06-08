@@ -99,27 +99,29 @@ impl Chip8 {
 
     pub fn load_operand(&self, src: Operand) -> u32 {
         match src {
-            Operand::Register(r)        => self.gp_reg[r] as u32,
-            Operand::Address(a)         => self.ram[a] as u32,
-            Operand::I                  => self.i as u32,
-            Operand::ByteLiteral(b)     => b as u32,
-            Operand::NibbleLiteral(n)   => (n & 0x0F) as u32,
-            Operand::SoundTimer         => self.sound_timer as u32,
-            Operand::DelayTimer         => self.delay_timer as u32,
-            Operand::No                 => panic!("Cannot load"),
+            Register(r)        => self.gp_reg[r] as u32,
+            Address(a)         => self.ram[a] as u32,
+            I                  => self.i as u32,
+            Indirect           => self.ram[self.i] as u32,
+            ByteLiteral(b)     => b as u32,
+            NibbleLiteral(n)   => (n & 0x0F) as u32,
+            SoundTimer         => self.sound_timer as u32,
+            DelayTimer         => self.delay_timer as u32,
+            No                 => panic!("Cannot load nothing"),
         }
     }
 
     pub fn store_operand(&mut self, dest: Operand, val: u32) {
         match dest {
-            Operand::Register(r)         => { self.gp_reg[r] = (val & 0xFF) as u8; },
-            Operand::Address(a)          => { self.ram[a] = (val & 0xFF) as u8; },
-            Operand::I                   => { self.i = (val & 0xFFFF) as usize; },
-            Operand::ByteLiteral(_) |
-            Operand::NibbleLiteral(_)    => { panic!("Cannot store a literal."); },
-            Operand::SoundTimer         => { self.sound_timer = val as u8; },
-            Operand::DelayTimer            => { self.delay_timer = val as u8; },
-            Operand::No                 => { panic!("cannot store"); }
+            Register(r)         => { self.gp_reg[r] = (val & 0xFF) as u8; },
+            Address(a)          => { self.ram[a] = (val & 0xFF) as u8; },
+            I                   => { self.i = (val & 0xFFFF) as usize; },
+            Indirect            => { self.ram[self.i] = val as u8; },
+            SoundTimer          => { self.sound_timer = val as u8; },
+            DelayTimer          => { self.delay_timer = val as u8; },
+            ByteLiteral(_) | NibbleLiteral(_)
+                                => { panic!("Cannot store a literal."); },
+            No                  => { panic!("cannot store nothing"); }
         }
     }
 

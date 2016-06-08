@@ -3,10 +3,8 @@ use chip8::operand::{ Operand, operand_to_string };
 use chip8::operand::Operand::{ Address, Register, ByteLiteral, NibbleLiteral, I };
 
 pub struct OpAdd { }
-impl OpAdd {
-    pub fn new() -> OpAdd { OpAdd {} }
-}
 impl Opcode for OpAdd {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpAdd { } ) }
     fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -38,10 +36,8 @@ impl Opcode for OpAdd {
 }
 
 pub struct OpSub { }
-impl OpSub {
-    pub fn new() -> OpSub { OpSub {} }
-}
 impl Opcode for OpSub {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpSub { } ) }
     fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -66,10 +62,8 @@ impl Opcode for OpSub {
 }
 
 pub struct OpSubn { }
-impl OpSubn {
-    pub fn new() -> OpSubn { OpSubn {} }
-}
 impl Opcode for OpSubn {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpSubn { } ) }
     fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -95,12 +89,9 @@ impl Opcode for OpSubn {
 
 
 
-pub struct OpOr {
-}
-impl OpOr {
-    pub fn new() -> OpOr { OpOr {} }
-}
+pub struct OpOr { }
 impl Opcode for OpOr {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpOr { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -123,12 +114,9 @@ impl Opcode for OpOr {
     }
 }
 
-pub struct OpAnd {
-}
-impl OpAnd {
-    pub fn new() -> OpAnd { OpAnd {} }
-}
+pub struct OpAnd { }
 impl Opcode for OpAnd {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpAnd { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -151,12 +139,9 @@ impl Opcode for OpAnd {
     }
 }
 
-pub struct OpXor {
-}
-impl OpXor {
-    pub fn new() -> OpXor { OpXor {} }
-}
+pub struct OpXor { }
 impl Opcode for OpXor {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpXor { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut a: u32;
         let mut b: u32;
@@ -179,12 +164,9 @@ impl Opcode for OpXor {
     }
 }
 
-pub struct OpShr {
-}
-impl OpShr {
-    pub fn new() -> OpShr { OpShr {} }
-}
+pub struct OpShr { }
 impl Opcode for OpShr {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpShr { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut x: u32;
         let mut y: u32;
@@ -207,12 +189,9 @@ impl Opcode for OpShr {
     }
 }
 
-pub struct OpShl {
-}
-impl OpShl {
-    pub fn new() -> OpShl { OpShl {} }
-}
+pub struct OpShl { }
 impl Opcode for OpShl {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpShl { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut x: u32;
         let mut y: u32;
@@ -236,11 +215,9 @@ impl Opcode for OpShl {
 }
 
 
-struct OpRand { }
-impl OpRand {
-    pub fn new() -> OpRand { OpRand {} }
-}
+pub struct OpRand { }
 impl Opcode for OpRand {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpRand { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mask = match (dest, src) {
             (Register(_),   ByteLiteral(_))   => core.load_operand(src),
@@ -261,11 +238,9 @@ impl Opcode for OpRand {
     }
 }
 
-struct OpBcd { }
-impl OpBcd {
-    pub fn new() -> OpBcd { OpBcd {} }
-}
+pub struct OpBcd { }
 impl Opcode for OpBcd {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpBcd { } ) }
     fn execute(&mut self, dest: Operand, src: Operand, core: &mut Chip8) {
         let mut val = match (dest, src) {
             (I,   Register(_))   => core.load_operand(src),

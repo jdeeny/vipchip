@@ -13,6 +13,7 @@ mod math;
 //mod memory;
 
 pub trait Opcode {
+    fn new(word: Word) -> Box<Self> where Self: Sized;
     fn execute(&mut self, src: Operand, dest: Operand, &mut Chip8);
     fn to_word(&self, src: Operand, dest: Operand) -> Word;
     fn to_string(&self, src: Operand, dest: Operand) -> String;
@@ -23,10 +24,9 @@ pub trait Opcode {
 pub struct OpInvalid {
     instruction_word: Word,  //store the entire u16 since it can't be recreated
 }
-impl OpInvalid {
-    pub fn new(word: Word) -> OpInvalid { OpInvalid { instruction_word: word } }
-}
+impl OpInvalid { }
 impl Opcode for OpInvalid {
+    fn new(word: Word) -> Box<Self> where Self: Sized { Box::new(OpInvalid { instruction_word: word }) }
     fn execute(&mut self, src: Operand, dest: Operand, core: &mut Chip8) { thread::sleep_ms(1000);}
     fn to_word(&self, src: Operand, dest: Operand) -> Word {
         self.instruction_word
