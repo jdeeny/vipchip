@@ -1,6 +1,8 @@
 extern crate rand;
 use self::rand::{thread_rng, Rng};
 
+use config::Config;
+
 /*pub use self::operand::{ Operand };
 pub use self::operation::{ Operation };
 use chip8::operand::Operand::*;
@@ -24,6 +26,7 @@ pub use self::state::SharedState;
 use self::operand::Operand::{ Register, Address12, Literal12, Literal8, Literal4, IndirectI, I, DelayTimer, SoundTimer };
 
 pub struct Chip8 {
+    pub config: Config,
     state: SharedState,
     gp_reg: [u8; 16],
     i: usize,
@@ -39,7 +42,7 @@ pub struct Chip8 {
 
 impl Chip8 {
 
-    pub fn new(state: SharedState) -> Chip8 {
+    pub fn new(config: Config, state: SharedState) -> Chip8 {
         let font = &FONT_CHIP8_4X5;
         let mut ram = [0; 4 *1024];
 
@@ -47,6 +50,7 @@ impl Chip8 {
         ram[0..font.len()].copy_from_slice(font);
 
         Chip8 {
+            config: config,
             state: state,
             gp_reg: [0; 16],
             i: 0,
@@ -81,6 +85,9 @@ impl Chip8 {
             (hi << 4) | lo
     }
 
+    pub fn reg(&mut self, reg: usize) -> u8 {
+        self.gp_reg[reg]
+    }
     pub fn set_reg(&mut self, reg: usize, val: u8) {
         self.gp_reg[reg] = val;
     }
@@ -104,6 +111,15 @@ impl Chip8 {
 
     pub fn jump_pc(&mut self, addr: usize) {
         self.pc = addr;
+    }
+
+    pub fn set_ram(&mut self, addr: usize, data: u8)
+    {
+        self.ram[addr] = data;
+    }
+
+    pub fn ram(&mut self, addr: usize) -> u8 {
+        self.ram[addr]
     }
 
     pub fn decrement_timers(&mut self) {
@@ -136,7 +152,7 @@ impl Chip8 {
             DelayTimer          => { self.delay_timer = val as u8; },
             Literal12(_) | Literal8(_) | Literal4(_)
                                 => { panic!("Cannot store a literal."); },
-            Nowher              => { panic!("cannot store nothing"); }
+            Nowhere              => { panic!("cannot store nothing"); }
         }
     }
 

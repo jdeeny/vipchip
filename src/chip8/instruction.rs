@@ -20,12 +20,59 @@ struct InstructionTable {
 }
 impl InstructionTable {
     pub fn new() -> InstructionTable {
-        use chip8::OperandKind::{ Register, Literal12, Literal8, Literal4, IndirectI, I, Unused };
+        use chip8::OperandKind::*;
         use self::Coding::*;
 
         let mut itable: Vec<InstructionDef> = vec!(
-            InstructionDef::new(OpAdd, Register, Register, Unused, [C(0x7), D, S, C(0x4)], "ADD {d}, {s}"),
-            InstructionDef::new(OpAdd, Register, Literal8, Unused, [C(0x4), D, S, S ], "ADD {d}, {s}"),
+            InstructionDef::new(OpCls,      Unused,     Unused,     Unused,     [C(0x0), C(0x0), C(0xE), C(0x0)], "Cls"),
+            InstructionDef::new(OpRet,      Unused,     Unused,     Unused,     [C(0x0), C(0x0), C(0xE), C(0x0)], "Ret"),
+
+            InstructionDef::new(OpJump,     Literal12,  Unused,     Unused,     [C(0x1), D,      D,      D     ], "Jump {d}"),
+            InstructionDef::new(OpCall,     Literal12,  Unused,     Unused,     [C(0x2), D,      D,      D     ], "Call {d}"),
+            InstructionDef::new(OpSkipEq,   Register,   Literal8,   Unused,     [C(0x3), D,      S,      S     ], "SkipEq {d}, {s}"),
+            InstructionDef::new(OpSkipNeq,  Register,   Literal8,   Unused,     [C(0x4), D,      S,      S     ], "SkipNeq {d}, {s}"),
+            InstructionDef::new(OpSkipEq,   Register,   Register,   Unused,     [C(0x5), D,      S,      C(0x0)], "SkipEq {d}, {s}"),
+
+            InstructionDef::new(OpLoad,     Register,   Literal8,   Unused,     [C(0x6), D,      S,      S     ], "Load {d}, {s}"),
+
+            InstructionDef::new(OpAdd,      Register,   Literal8,   Unused,     [C(0x7), D,      S,      S     ], "Add {d}, {s}"),
+
+            InstructionDef::new(OpLoad,     Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x0)], "Load {d}, {s}"),
+
+            InstructionDef::new(OpOr,       Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x1)], "Or {d}, {s}"),
+            InstructionDef::new(OpAnd,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x2)], "And {d}, {s}"),
+            InstructionDef::new(OpXor,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x3)], "Xor {d}, {s}"),
+            InstructionDef::new(OpAdd,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x4)], "Add {d}, {s}"),
+            InstructionDef::new(OpSub,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x5)], "Sub {d}, {s}"),
+            InstructionDef::new(OpShR,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x6)], "ShR {d}, {s}"),
+            InstructionDef::new(OpSubN,     Register,   Register,   Unused,     [C(0x8), D,      S,      C(0x7)], "SubN {d}, {s}"),
+            InstructionDef::new(OpShL,      Register,   Register,   Unused,     [C(0x8), D,      S,      C(0xE)], "ShL {d}, {s}"),
+
+            InstructionDef::new(OpSkipNeq,  Register,   Register,   Unused,     [C(0x9), D,      S,      C(0x0)], "SkipNeq {d}, {s}"),
+            InstructionDef::new(OpLoad,     I,          Literal12,  Unused,     [C(0xA), S,      S,      S     ], "Load {d}, {s}"),
+
+            InstructionDef::new(OpJumpV0,   Literal12,  Unused,     Unused,     [C(0xB), D,      D,      D     ], "JumpV0 {d}"),
+            InstructionDef::new(OpRand,     Register,   Literal8,   Unused,     [C(0xC), D,      S,      S     ], "Rand {d}, {s}"),
+
+            InstructionDef::new(OpSprite,   Register,   Register,   Literal4,   [C(0xD), D,      S,      A     ], "Sprite {d}, {s}, {a}"),
+
+            InstructionDef::new(OpSkipKey,  Register,   Unused,     Unused,     [C(0xE), D,      C(0x9), C(0xE)], "SkipKey {d}"),
+            InstructionDef::new(OpSkipNKey, Register,   Unused,     Unused,     [C(0xE), D,      C(0xA), C(0x1)], "SkipNKey {d}"),
+
+            InstructionDef::new(OpLoad,     Register,   DelayTimer, Unused,     [C(0xF), D,      C(0x0), C(0x7)], "Load {d}, {s}"),
+
+            InstructionDef::new(OpWaitKey,  Register,   Unused,     Unused,     [C(0xF), D,      C(0x0), C(0xA)], "WaitKey {d}"),
+            InstructionDef::new(OpLoad,     DelayTimer, Register,   Unused,     [C(0xF), S,      C(0x1), C(0x5)], "Load {d}, {s}"),
+            InstructionDef::new(OpLoad,     SoundTimer, Register,   Unused,     [C(0xF), S,      C(0x1), C(0x8)], "Load {d}, {s}"),
+
+            InstructionDef::new(OpAdd,      I,          Register,   Unused,     [C(0xF), D,      C(0x1), C(0xE)], "Add {d}, {s}"),
+
+            InstructionDef::new(OpFont,     I,          Register,   Unused,     [C(0xF), S,      C(0x2), C(0x9)], "Font {d}, {s}"),
+
+            InstructionDef::new(OpBCD,      IndirectI,  Register,   Unused,     [C(0xF), S,      C(0x3), C(0x3)], "BCD {d}, {s}"),
+
+            InstructionDef::new(OpStash,    IndirectI,  Register,   Unused,     [C(0xF), S,      C(0x5), C(0x5)], "Stash {s}"),
+            InstructionDef::new(OpFetch,    Register,   IndirectI,  Unused,     [C(0xF), D,      C(0x6), C(0x5)], "Fetch {d}"),
 
         );
 

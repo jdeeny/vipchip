@@ -12,7 +12,7 @@ pub struct Emulator {
 
 impl Emulator {
     pub fn new(config: Config, state: SharedState) -> Emulator {
-        let core = Chip8::new(state);
+        let core = Chip8::new(config, state);
 
         Emulator {
             config: config,

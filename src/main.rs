@@ -1,5 +1,6 @@
 #![feature(mpsc_select)]
 #![feature(box_syntax)]
+#![feature(inclusive_range_syntax)]
 extern crate sdl2;
 extern crate rand;
 
