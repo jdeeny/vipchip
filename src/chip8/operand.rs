@@ -35,7 +35,7 @@ impl Operand {
             Operand::Literal8(n)         => format!("0x{:02X}", n),
             Operand::Literal4(n)         => format!("0x{:01X}", n),
             Operand::I                   => format!("I"),
-            Operand::IndirectI            => format!("Indirect"),
+            Operand::IndirectI           => format!("Indirect"),
             Operand::SoundTimer          => format!("ST"),
             Operand::DelayTimer          => format!("DT"),
             Operand::Nowhere             => format!("none"),

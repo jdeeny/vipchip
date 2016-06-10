@@ -3,14 +3,6 @@ use self::rand::{thread_rng, Rng};
 
 use config::Config;
 
-/*pub use self::operand::{ Operand };
-pub use self::operation::{ Operation };
-use chip8::operand::Operand::*;
-pub use self::instruction::{ Instruction, Word };
-pub use self::opcode::{ Opcode };
-pub use self::font::FONT_CHIP8_4X5;
-pub use self::state::SharedState;
-*/
 mod instruction;
 mod operand;
 mod operation;
@@ -18,7 +10,7 @@ mod font;
 mod state;
 
 
-pub use self::instruction::{ Instruction, InstructionDef, Word };
+pub use self::instruction::{ Instruction, InstructionDef, Word, InstructionTable };
 pub use self::operand::{ Operand, OperandKind };
 use self::font::FONT_CHIP8_4X5;
 pub use self::state::SharedState;
@@ -33,9 +25,10 @@ pub struct Chip8 {
     pc: usize,
     delay_timer: u8,
     sound_timer: u8,
-    ram: [u8; 4 * 1024],
+    ram: Vec<u8>,
     stack: Vec<usize>,
     rng: Box<Rng>,
+    itable: InstructionTable,
 }
 
 
@@ -44,10 +37,13 @@ impl Chip8 {
 
     pub fn new(config: Config, state: SharedState) -> Chip8 {
         let font = &FONT_CHIP8_4X5;
-        let mut ram = [0; 4 *1024];
+        let mut ram:Vec<u8> = vec![0; config.ram_size];
 
         //copy font to beginning of RAM, into the 0-0x200 area
-        ram[0..font.len()].copy_from_slice(font);
+        let font_start = config.font_addr;
+        let font_end = font_start + font.len();
+        println!("font addr {:X} - {:X}", font_start, font_end );
+        ram[font_start..font_end].copy_from_slice(font);
 
         Chip8 {
             config: config,
@@ -60,6 +56,7 @@ impl Chip8 {
             ram: ram,
             stack: vec!(),
             rng: Box::new(thread_rng()),
+            itable: InstructionTable::new(),
         }
     }
 
@@ -71,18 +68,23 @@ impl Chip8 {
         }
     }
 
-    pub fn decode_instruction(&self, addr: usize) -> Instruction {
+
+    pub fn decode_instruction(&self, codeword: Word) -> Instruction {
+        self.itable.decode(codeword)
+    }
+
+    pub fn decode_at_addr(&self, addr: usize) -> Instruction {
         let hi = self.ram[addr];
         let lo = self.ram[addr + 1];
         let word = (hi as u16) << 8 | lo as u16;
 
-        panic!("Instruction::from_word(word)");
+        self.itable.decode(word)
     }
 
     pub fn current_codeword(&self) -> Word {
         let hi = self.ram[self.pc] as Word;
         let lo = self.ram[self.pc+1] as Word;
-            (hi << 4) | lo
+            (hi << 8) | lo
     }
 
     pub fn reg(&mut self, reg: usize) -> u8 {
@@ -127,18 +129,19 @@ impl Chip8 {
         if self.sound_timer > 0 { self.sound_timer -= 1; }
     }
 
-    pub fn load(&self, src: Operand) -> u32 {
+    pub fn load(&mut self, src: Operand) -> u32 {
         match src {
-            Register(r)        => self.gp_reg[r] as u32,
+            Register(r)        => self.reg(r) as u32,
             Address12(a)       => self.ram[a] as u32,
             I                  => self.i as u32,
-            IndirectI           => self.ram[self.i] as u32,
+            IndirectI          => self.ram[self.i] as u32,
             Literal12(n)       => n as u32,
             Literal8(n)        => n as u32,
             Literal4(n)        => n as u32,
             SoundTimer         => self.sound_timer as u32,
             DelayTimer         => self.delay_timer as u32,
-            Operand::Nowhere            => panic!("Cannot load nothing"),
+            _ => 0,
+            //Operand::Nowhere   => panic!("Cannot load nothing"),
         }
     }
 
@@ -150,9 +153,8 @@ impl Chip8 {
             IndirectI           => { self.ram[self.i] = val as u8; },
             SoundTimer          => { self.sound_timer = val as u8; },
             DelayTimer          => { self.delay_timer = val as u8; },
-            Literal12(_) | Literal8(_) | Literal4(_)
-                                => { panic!("Cannot store a literal."); },
-            Nowhere              => { panic!("cannot store nothing"); }
+            Literal12(_) | Literal8(_) | Literal4(_) | Operand::Nowhere
+                                => { panic!("Cannot store"); },
         }
     }
 
@@ -162,6 +164,7 @@ impl Chip8 {
         for r in self.gp_reg.iter() {
             print!("{:X} ", r);
         }
+        print!(" i:{:X}", self.i);
         println!("");
         //println!("i:{:X} pc:{:X} stack{}", self.i, self.pc, self.stack.len());
     }
@@ -176,6 +179,7 @@ impl Chip8 {
         }
     }
 
-    pub fn execute(&mut self, codeword: Word ) {
+    pub fn execute(&mut self, instruction: Instruction ) {
+        (instruction.def.operation)(&instruction, self);
     }
 }

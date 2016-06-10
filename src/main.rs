@@ -3,6 +3,7 @@
 #![feature(inclusive_range_syntax)]
 extern crate sdl2;
 extern crate rand;
+extern crate strfmt;
 
 use std::thread;
 use std::sync::{Arc, RwLock};

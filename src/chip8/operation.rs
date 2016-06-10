@@ -2,16 +2,16 @@ use chip8::{ Chip8, Instruction, Word };
 
 pub type Operation = fn(&Instruction, &mut Chip8);
 
-pub fn OpAdd(inst: &Instruction, core: &mut Chip8) {
+pub fn op_add(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.dest());
   let rhs = core.load(inst.src());
   let total = lhs + rhs;
   core.vf_store(total > 0xFF);  //set vF if result overflows
-  core.store(inst.dest(), total & 0xFF);
+  core.store(inst.dest(), total);
 }
 
 /// Subtract src from dest, store in dest. Set flag if NOT borrow
-pub fn OpSub(inst: &Instruction, core: &mut Chip8) {
+pub fn op_sub(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.dest()) as i32;
   let rhs = core.load(inst.src()) as i32;
   let total = ((lhs - rhs) as u32) & 0xFF;
@@ -21,7 +21,7 @@ pub fn OpSub(inst: &Instruction, core: &mut Chip8) {
 }
 
 /// Subtract dest from src, store in dest. Set flag if NOT borrow
-pub fn OpSubN(inst: &Instruction, core: &mut Chip8) {
+pub fn op_subn(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.src()) as i32;
   let rhs = core.load(inst.dest()) as i32;
   let total = ((lhs - rhs) as u32) & 0xFF;
@@ -31,21 +31,21 @@ pub fn OpSubN(inst: &Instruction, core: &mut Chip8) {
 }
 
 
-pub fn OpOr(inst: &Instruction, core: &mut Chip8) {
+pub fn op_or(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.dest());
   let rhs = core.load(inst.src());
   let result = lhs | rhs;
   core.store(inst.dest(), result);
 }
 
-pub fn OpAnd(inst: &Instruction, core: &mut Chip8) {
+pub fn op_and(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.dest());
   let rhs = core.load(inst.src());
   let result = lhs & rhs;
   core.store(inst.dest(), result);
 }
 
-pub fn OpXor(inst: &Instruction, core: &mut Chip8) {
+pub fn op_xor(inst: &Instruction, core: &mut Chip8) {
   let lhs = core.load(inst.dest());
   let rhs = core.load(inst.src());
   let result = lhs ^ rhs;
@@ -53,7 +53,7 @@ pub fn OpXor(inst: &Instruction, core: &mut Chip8) {
 }
 
 /// Shifts the source right 1 bit, and stores in dest. vF set to old LSB
-pub fn OpShR(inst: &Instruction, core: &mut Chip8) {
+pub fn op_shr(inst: &Instruction, core: &mut Chip8) {
   let val = core.load(inst.src());
   core.vf_store(val & 1 == 1);
   let result = val >> 1;
@@ -61,7 +61,7 @@ pub fn OpShR(inst: &Instruction, core: &mut Chip8) {
 }
 
 /// Shifts the source left 1 bit, and stores in dest. vF set to old MSB
-pub fn OpShL(inst: &Instruction, core: &mut Chip8) {
+pub fn op_shl(inst: &Instruction, core: &mut Chip8) {
   let val = core.load(inst.src());
   core.vf_store(val & 0x80 == 0x80);
   let result = (val << 1) & 0xFF;
@@ -70,17 +70,17 @@ pub fn OpShL(inst: &Instruction, core: &mut Chip8) {
 
 
 
-pub fn OpLoad(inst: &Instruction, core: &mut Chip8) {
+pub fn op_load(inst: &Instruction, core: &mut Chip8) {
     let data = core.load(inst.src());
     core.store(inst.dest(), data);
 }
 
-pub fn OpFont(inst: &Instruction, core: &mut Chip8) {
+pub fn op_font(inst: &Instruction, core: &mut Chip8) {
     let addr = core.config.font_addr as u32 + core.load(inst.src());
     core.store(inst.dest(), addr);
 }
 
-pub fn OpBCD(inst: &Instruction, core: &mut Chip8) {
+pub fn op_bcd(inst: &Instruction, core: &mut Chip8) {
     let val = core.load(inst.src());
     let hundreds = val / 100;
     let val = val - hundreds * 100;
@@ -97,7 +97,7 @@ pub fn OpBCD(inst: &Instruction, core: &mut Chip8) {
 }
 
 
-pub fn OpRand(inst: &Instruction, core: &mut Chip8) {
+pub fn op_rand(inst: &Instruction, core: &mut Chip8) {
     let mask = core.load(inst.src());
     let data = core.rng.next_u32() & mask;
     core.store(inst.dest(), data);
@@ -105,7 +105,7 @@ pub fn OpRand(inst: &Instruction, core: &mut Chip8) {
 
 
 
-pub fn OpSkipEq(inst: &Instruction, core: &mut Chip8) {
+pub fn op_skipeq(inst: &Instruction, core: &mut Chip8) {
     let lhs = core.load(inst.dest());
     let rhs = core.load(inst.src());
     if lhs == rhs {
@@ -113,7 +113,7 @@ pub fn OpSkipEq(inst: &Instruction, core: &mut Chip8) {
     }
 }
 
-pub fn OpSkipNeq(inst: &Instruction, core: &mut Chip8) {
+pub fn op_skipneq(inst: &Instruction, core: &mut Chip8) {
     let lhs = core.load(inst.dest());
     let rhs = core.load(inst.src());
     if lhs != rhs {
@@ -121,7 +121,7 @@ pub fn OpSkipNeq(inst: &Instruction, core: &mut Chip8) {
     }
 }
 
-pub fn OpSkipKey(inst: &Instruction, core: &mut Chip8) {
+pub fn op_skipkey(inst: &Instruction, core: &mut Chip8) {
     let key = core.load(inst.dest()) as usize;
     let mut key_state = false;
     {
@@ -131,7 +131,7 @@ pub fn OpSkipKey(inst: &Instruction, core: &mut Chip8) {
     if key_state { core.advance_pc(); }
 }
 
-pub fn OpSkipNKey(inst: &Instruction, core: &mut Chip8) {
+pub fn op_skipnkey(inst: &Instruction, core: &mut Chip8) {
     let key = core.load(inst.dest()) as usize;
     let mut key_state = false;
     {
@@ -141,47 +141,46 @@ pub fn OpSkipNKey(inst: &Instruction, core: &mut Chip8) {
     if !key_state { core.advance_pc(); }
 }
 
-pub fn OpWaitKey(inst: &Instruction, core: &mut Chip8) {
+pub fn op_waitkey(inst: &Instruction, core: &mut Chip8) {
     panic!("WaitKey Unimplemented")
 }
 
 
 /// Jump to address
-pub fn OpJump(inst: &Instruction, core: &mut Chip8) {
+pub fn op_jump(inst: &Instruction, core: &mut Chip8) {
     let addr = core.load(inst.dest()) as usize;
     core.jump_pc(addr);
 }
 
 /// Jimp to address + V0
-pub fn OpJumpV0(inst: &Instruction, core: &mut Chip8) {
+pub fn op_jumpv0(inst: &Instruction, core: &mut Chip8) {
     let mut addr = core.load(inst.dest()) as usize;
     addr += core.reg(0) as usize;
     core.jump_pc(addr);
 }
 
 
-pub fn OpCall(inst: &Instruction, core: &mut Chip8) {
+pub fn op_call(inst: &Instruction, core: &mut Chip8) {
     let addr = core.load(inst.dest()) as usize;
-    core.stack.push(addr);
+    let pc = core.pc();
+    core.stack.push(pc);
+    core.jump_pc(addr);
 }
 
-pub fn OpRet(inst: &Instruction, core: &mut Chip8) {
+pub fn op_ret(inst: &Instruction, core: &mut Chip8) {
     let addr = core.stack.pop().unwrap();
     core.jump_pc(addr);
 }
 
 
 
-
-
-
-pub fn OpCls(inst: &Instruction, core: &mut Chip8) {
+pub fn op_cls(inst: &Instruction, core: &mut Chip8) {
     let mut vram = core.state.vram.write().unwrap();
 
     vram.pixels = [[0; 32]; 64];
 }
 
-pub fn OpSprite(inst: &Instruction, core: &mut Chip8) {
+pub fn op_sprite(inst: &Instruction, core: &mut Chip8) {
 
     let x = core.load(inst.dest());
     let mut y = core.load(inst.src());
@@ -191,6 +190,7 @@ pub fn OpSprite(inst: &Instruction, core: &mut Chip8) {
 
     let mut pixels = core.state.vram.read().unwrap().pixels;
 
+    println!("sprint: x{} y{} n{} i{:X}", x, y, n, i );
     core.vf_clear();
     for _ in 0..n {
         let byte = core.ram[i];
@@ -212,7 +212,7 @@ pub fn OpSprite(inst: &Instruction, core: &mut Chip8) {
 
 }
 
-pub fn OpStash(inst: &Instruction, core: &mut Chip8) {
+pub fn op_stash(inst: &Instruction, core: &mut Chip8) {
     let last = core.load(inst.src()) as usize;
     let i = core.i;
     for r in 0...last {
@@ -221,7 +221,7 @@ pub fn OpStash(inst: &Instruction, core: &mut Chip8) {
     }
 }
 
-pub fn OpFetch(inst: &Instruction, core: &mut Chip8) {
+pub fn op_fetch(inst: &Instruction, core: &mut Chip8) {
     let last = core.load(inst.src()) as usize;
     let i = core.i;
     for r in 0...last {

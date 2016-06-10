@@ -37,10 +37,14 @@ impl Emulator {
             }
 
             let codeword = self.core.current_codeword();
-            println!("0x{:03X}: {:04X}", self.core.pc(), codeword );
+            print!("0x{:03X}: {:04X}  ", self.core.pc(), codeword );
             self.core.advance_pc();
-            self.core.execute(codeword);
+            let instr = self.core.decode_instruction(codeword);
+            println!("instr: {:?}", instr.to_string());
+            self.core.dump_reg();
+            self.core.execute(instr);
 
+            thread::sleep_ms(250);
             thread::park_timeout(Duration::new(0,50));
         }
     }
