@@ -1,7 +1,5 @@
 #![feature(mpsc_select)]
 #![feature(box_syntax)]
-
-
 extern crate sdl2;
 extern crate rand;
 
@@ -14,34 +12,35 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 
+pub mod config;
 pub mod chip8;
 pub mod ui;
 pub mod emulator;
 mod fileio;
 
 use ui::Ui;
-use chip8::state::{ SharedState, Vram, Keyboard, Audio };
+use chip8::{ SharedState };
 
 use emulator::Emulator;
 use fileio::{Loader, load_file, LoaderType};
 
+use config::Config;
 
 fn main() {
+
+    let config = Config::new();
 
     let (tx_ui, rx_ui) = mpsc::channel();
     let (tx_emulator, rx_emulator) = mpsc::channel();
 
 
-    let vram = Arc::new(RwLock::new(Vram::new()));
-    let keyboard = Arc::new(RwLock::new(Keyboard::new()));
-    let audio = Arc::new(RwLock::new(Audio::new()));
+    let state = SharedState::new();
 
-
-    let ui_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };
-    let emulator_state = SharedState { vram: vram.clone(), keys: keyboard.clone(), audio: audio.clone() };
+    let ui_state = state.clone();
+    let emulator_state = state.clone();
 
     let ui_thread = thread::spawn(move || {
-        let mut ui = Ui::new(ui_state);
+        let mut ui = Ui::new(config, ui_state);
         ui.run();
         tx_ui.send(0).unwrap();
     });
@@ -76,9 +75,9 @@ fn main() {
     println!("]");
 
     let emulator_thread = thread::spawn(move || {
-        let mut emulator = Emulator::new(emulator_state);
+        let mut emulator = Emulator::new(config, emulator_state);
         let load_offset = 0x200;
-        emulator.core.load_hex(&test_program, load_offset);
+        emulator.core.load_bytes(&test_program, load_offset);
         emulator.core.jump_pc(load_offset);
         emulator.run();
         tx_emulator.send(()).unwrap();

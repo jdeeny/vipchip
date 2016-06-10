@@ -2,7 +2,8 @@ pub mod interface;
 
 use std::thread;
 
-use chip8::{SharedState};
+use chip8::{ SharedState };
+use config::Config;
 
 use self::interface::{Interface, InterfaceSdl2};
 use std::sync::{Arc, RwLock};
@@ -10,13 +11,15 @@ use std::thread::sleep;
 use std::time::{Duration,SystemTime};
 
 pub struct Ui {
+    config: Config,
     state: SharedState,
     interface: Box<Interface>,
 }
 
 impl Ui {
-    pub fn new(state: SharedState) -> Ui {
+    pub fn new(config: Config, state: SharedState) -> Ui {
         Ui {
+            config: config,
             state: state,
             interface: Box::new(InterfaceSdl2::new())
         }

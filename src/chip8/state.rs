@@ -6,6 +6,22 @@ pub struct SharedState {
     pub audio: Arc<RwLock<Audio>>,
 }
 
+impl SharedState {
+    pub fn new() -> SharedState {
+        SharedState {
+            vram: Arc::new(RwLock::new(Vram::new())),
+            keys: Arc::new(RwLock::new(Keyboard::new())),
+            audio: Arc::new(RwLock::new(Audio::new())),
+        }
+    }
+    pub fn clone(&self) -> SharedState {
+        SharedState {
+            vram: self.vram.clone(),
+            keys: self.keys.clone(),
+            audio: self.audio.clone(),
+        }
+    }
+}
 
 pub struct Vram {
     pub pixels: [[u8; 32]; 64],

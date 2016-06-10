@@ -1,15 +1,182 @@
-use chip8::{ Chip8, Operand };
-use chip8::operand::Operand::{ Register, ByteLiteral, I, Indirect, No };
+use chip8::{ Chip8, Operand, OperandKind };
+use chip8::operation::*;
 
-use chip8::opcode::*;
 
 pub type Word = u16;
+
+/// Type to hold instruction word pattern
+pub type Pattern = [Coding; 4];
+
+pub enum Coding {
+    C(u8),
+    D,
+    S,
+    A,
+}
+
+
+struct InstructionTable {
+    table: Vec<InstructionDef>,
+}
+impl InstructionTable {
+    pub fn new() -> InstructionTable {
+        use chip8::OperandKind::{ Register, Literal12, Literal8, Literal4, IndirectI, I, Unused };
+        use self::Coding::*;
+
+        let mut itable: Vec<InstructionDef> = vec!(
+            InstructionDef::new(OpAdd, Register, Register, Unused, [C(0x7), D, S, C(0x4)], "ADD {d}, {s}"),
+            InstructionDef::new(OpAdd, Register, Literal8, Unused, [C(0x4), D, S, S ], "ADD {d}, {s}"),
+
+        );
+
+        InstructionTable { table: itable }
+    }
+}
+
+
+///Defines a specific kind of instructions
+///
+///It has a unique signature: the kind of opcode and the kinds of the locations dest, src, aux
+///
+///pattern defines how the instruction is decoded:
+///     C(n) is a constant nibble. The codeword must match for this instruction to be valid.
+///     D, S, and A are value markers that indicate which nibbles represent which operand's value.
+///     If more than one nibble is used for the same operand, the leftmost nibble is most significant
+///     and the rightmost is least significant.
+///     D indicates dest, S src, and A aux.
+pub struct InstructionDef {
+  opcode: Operation,
+  dest_kind: OperandKind,
+  src_kind: OperandKind,
+  aux_kind: OperandKind,
+  pattern: Pattern,
+  mnemonic: String,
+}
+
+impl InstructionDef {
+    pub fn new(opcode: Operation, dest: OperandKind, src: OperandKind, aux:OperandKind, pattern: Pattern, mnemonic: &str) -> InstructionDef {
+        InstructionDef {
+            opcode: opcode,
+            dest_kind: dest,
+            src_kind: src,
+            aux_kind: aux,
+            pattern: pattern,
+            mnemonic: mnemonic.to_string(),
+        }
+    }
+}
+
+pub struct Instruction {
+  def: InstructionDef,
+  codeword: Word,
+  dest: Operand,
+  src: Operand,
+  aux: Operand,
+}
+
+impl Instruction {
+    pub fn new(def: InstructionDef, codeword: Word) -> Instruction {
+        let mut dest_data: usize = 0;
+        let mut src_data: usize = 0;
+        let mut aux_data: usize = 0;
+
+        let mut word = codeword as usize;
+        for coding in def.pattern.iter() {
+            let nibble = (word & 0xF000) >> 12;
+            word <<= 4;
+            match *coding {
+                self::Coding::C(_) => {},
+                self::Coding::D => dest_data = (dest_data << 4) | nibble,
+                self::Coding::S => src_data = (src_data << 4) | nibble,
+                self::Coding::A => aux_data = (aux_data << 4) | nibble,
+            }
+        }
+
+        let mut dest: Operand;
+        let mut src: Operand;
+        let mut aux: Operand;
+        {
+            dest = Self::specify_operand(&def.dest_kind, dest_data);
+            src = Self::specify_operand(&def.src_kind, src_data);
+            aux = Self::specify_operand(&def.aux_kind, aux_data);
+        }
+
+        Instruction {
+            def: def,
+            codeword: codeword,
+            dest: dest,
+            src: src,
+            aux: aux,
+        }
+    }
+    fn specify_operand(kind: &OperandKind, data: usize) -> Operand {
+        match *kind {
+            OperandKind::Register => Operand::Register(data),
+            OperandKind::I => Operand::I,
+            OperandKind::Address12 => Operand::Address12(data),
+            OperandKind::IndirectI => Operand::IndirectI,
+            OperandKind::Literal12 => Operand::Literal12(data),
+            OperandKind::Literal8 => Operand::Literal8(data),
+            OperandKind::Literal4 => Operand::Literal4(data),
+            OperandKind::DelayTimer => Operand::DelayTimer,
+            OperandKind::SoundTimer => Operand::SoundTimer,
+            OperandKind::Unused => Operand::Nowhere,
+        }
+    }
+
+    pub fn dest(&self) -> Operand {
+        self.dest
+    }
+
+    pub fn src(&self) -> Operand {
+        self.dest
+    }
+
+    pub fn aux(&self) -> Operand {
+        self.dest
+    }
+
+}
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 pub struct Instruction {
     op: Box<Opcode>,
     src: Operand,
     dest: Operand,
 }
+
+
+
+
+
+
+
+
+
+
 
 impl Instruction {
     pub fn new(opcode: Box<Opcode>, src: Operand, dest: Operand) -> Instruction {
@@ -95,3 +262,4 @@ fn join_nibbles(nibbles: &[usize]) -> usize {
     }
     result
 }
+*/

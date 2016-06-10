@@ -1,19 +1,27 @@
 extern crate rand;
 use self::rand::{thread_rng, Rng};
 
-pub use self::operand::{ Operand };
+/*pub use self::operand::{ Operand };
+pub use self::operation::{ Operation };
 use chip8::operand::Operand::*;
 pub use self::instruction::{ Instruction, Word };
 pub use self::opcode::{ Opcode };
 pub use self::font::FONT_CHIP8_4X5;
 pub use self::state::SharedState;
-
-pub mod operand;
+*/
 mod instruction;
-pub mod opcode;
+mod operand;
+mod operation;
 mod font;
-pub mod state;
+mod state;
 
+
+pub use self::instruction::{ Instruction, InstructionDef, Word };
+pub use self::operand::{ Operand, OperandKind };
+use self::font::FONT_CHIP8_4X5;
+pub use self::state::SharedState;
+
+use self::operand::Operand::{ Register, Address12, Literal12, Literal8, Literal4, IndirectI, I, DelayTimer, SoundTimer };
 
 pub struct Chip8 {
     state: SharedState,
@@ -51,7 +59,7 @@ impl Chip8 {
         }
     }
 
-    pub fn load_hex(&mut self, bytes: &Vec<u8>, addr: usize) {
+    pub fn load_bytes(&mut self, bytes: &Vec<u8>, addr: usize) {
         let mut i = addr;
         for b in bytes {
             self.ram[i] = *b;
@@ -64,7 +72,13 @@ impl Chip8 {
         let lo = self.ram[addr + 1];
         let word = (hi as u16) << 8 | lo as u16;
 
-        Instruction::from_word(word)
+        panic!("Instruction::from_word(word)");
+    }
+
+    pub fn current_codeword(&self) -> Word {
+        let hi = self.ram[self.pc] as Word;
+        let lo = self.ram[self.pc+1] as Word;
+            (hi << 4) | lo
     }
 
     pub fn set_reg(&mut self, reg: usize, val: u8) {
@@ -77,7 +91,7 @@ impl Chip8 {
         self.gp_reg[0xF] = 1;
     }
 
-    pub fn store_vf_flag(&mut self, flag: bool) {
+    pub fn vf_store(&mut self, flag: bool) {
         self.gp_reg[0xF] = if flag { 1 } else { 0 };
     }
 
@@ -97,31 +111,32 @@ impl Chip8 {
         if self.sound_timer > 0 { self.sound_timer -= 1; }
     }
 
-    pub fn load_operand(&self, src: Operand) -> u32 {
+    pub fn load(&self, src: Operand) -> u32 {
         match src {
             Register(r)        => self.gp_reg[r] as u32,
-            Address(a)         => self.ram[a] as u32,
+            Address12(a)       => self.ram[a] as u32,
             I                  => self.i as u32,
-            Indirect           => self.ram[self.i] as u32,
-            ByteLiteral(b)     => b as u32,
-            NibbleLiteral(n)   => (n & 0x0F) as u32,
+            IndirectI           => self.ram[self.i] as u32,
+            Literal12(n)       => n as u32,
+            Literal8(n)        => n as u32,
+            Literal4(n)        => n as u32,
             SoundTimer         => self.sound_timer as u32,
             DelayTimer         => self.delay_timer as u32,
-            No                 => panic!("Cannot load nothing"),
+            Operand::Nowhere            => panic!("Cannot load nothing"),
         }
     }
 
-    pub fn store_operand(&mut self, dest: Operand, val: u32) {
+    pub fn store(&mut self, dest: Operand, val: u32) {
         match dest {
             Register(r)         => { self.gp_reg[r] = (val & 0xFF) as u8; },
-            Address(a)          => { self.ram[a] = (val & 0xFF) as u8; },
+            Address12(a)        => { self.ram[a] = (val & 0xFF) as u8; },
             I                   => { self.i = (val & 0xFFFF) as usize; },
-            Indirect            => { self.ram[self.i] = val as u8; },
+            IndirectI           => { self.ram[self.i] = val as u8; },
             SoundTimer          => { self.sound_timer = val as u8; },
             DelayTimer          => { self.delay_timer = val as u8; },
-            ByteLiteral(_) | NibbleLiteral(_)
+            Literal12(_) | Literal8(_) | Literal4(_)
                                 => { panic!("Cannot store a literal."); },
-            No                  => { panic!("cannot store nothing"); }
+            Nowher              => { panic!("cannot store nothing"); }
         }
     }
 
@@ -145,7 +160,6 @@ impl Chip8 {
         }
     }
 
-    pub fn execute(&mut self, instruction: &mut Instruction ) {
-        instruction.execute(self);
+    pub fn execute(&mut self, codeword: Word ) {
     }
 }
