@@ -53,7 +53,7 @@ impl InstructionTable {
             InstructionDef::new(op_waitkey,  Register,   Unused,     Unused,     [C(0xF), D,      C(0x0), C(0xA)], "WaitKey {d}"),
             InstructionDef::new(op_load,     DelayTimer, Register,   Unused,     [C(0xF), S,      C(0x1), C(0x5)], "Load {d}, {s}"),
             InstructionDef::new(op_load,     SoundTimer, Register,   Unused,     [C(0xF), S,      C(0x1), C(0x8)], "Load {d}, {s}"),
-            InstructionDef::new(op_add,      I,          Register,   Unused,     [C(0xF), D,      C(0x1), C(0xE)], "Add {d}, {s}"),
+            InstructionDef::new(op_add,      I,          Register,   Unused,     [C(0xF), S,      C(0x1), C(0xE)], "Add {d}, {s}"),
             InstructionDef::new(op_font,     I,          Register,   Unused,     [C(0xF), S,      C(0x2), C(0x9)], "Font {d}, {s}"),
             InstructionDef::new(op_bcd,      IndirectI,  Register,   Unused,     [C(0xF), S,      C(0x3), C(0x3)], "BCD {d}, {s}"),
             InstructionDef::new(op_stash,    IndirectI,  Register,   Unused,     [C(0xF), S,      C(0x5), C(0x5)], "Stash {s}"),
@@ -223,5 +223,4 @@ impl Instruction {
         vars.insert("a".to_string(), self.aux.to_string());
         strfmt(&self.def.mnemonic, &vars).unwrap()
     }
-
 }

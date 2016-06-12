@@ -190,7 +190,7 @@ pub fn op_sprite(inst: &Instruction, core: &mut Chip8) {
 
     let mut pixels = core.state.vram.read().unwrap().pixels;
 
-    println!("sprint: x{} y{} n{} i{:X}", x, y, n, i );
+    //println!("sprite: x{} y{} n{} i{:X}", x, y, n, i );
     core.vf_clear();
     for _ in 0..n {
         let byte = core.ram[i];

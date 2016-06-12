@@ -179,7 +179,7 @@ impl Chip8 {
         }
     }
 
-    pub fn execute(&mut self, instruction: Instruction ) {
-        (instruction.def.operation)(&instruction, self);
+    pub fn execute(&mut self, instruction: &Instruction ) {
+        (instruction.def.operation)(instruction, self);
     }
 }
