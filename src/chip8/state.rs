@@ -32,7 +32,7 @@ impl Vram {
     }
 }
 
-
+#[derive(Copy,Clone)]
 pub struct Keyboard {
     pub state: [bool; 16],
 }

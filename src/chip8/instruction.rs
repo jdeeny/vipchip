@@ -1,6 +1,10 @@
 use chip8::{ Operand, OperandKind };
 use chip8::operation::*;
 
+
+pub const CODEWORD_BITS: usize = 16;
+pub const NUM_CODEWORDS: usize = (1 << CODEWORD_BITS) + 1;
+
 pub type Word = u16;
 
 /// Type to hold instruction word pattern

@@ -10,6 +10,8 @@ use std::sync::{Arc, RwLock};
 use std::thread::sleep;
 use std::time::{Duration,SystemTime};
 
+
+
 pub struct Ui {
     config: Config,
     state: SharedState,
@@ -38,9 +40,7 @@ impl Ui {
             match last_frame.elapsed() {
                 Ok(elapsed) => {
                     if elapsed > frame_period {
-                        let vram = self.state.vram.read().unwrap();
-                        let pixels = vram.pixels;
-                        self.interface.draw_screen(&pixels);
+                        self.interface.draw_screen(&mut self.state);
                         last_frame += frame_period;
                     }
                 },

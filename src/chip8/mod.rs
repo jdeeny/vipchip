@@ -23,7 +23,7 @@ pub struct Chip8 {
     gp_reg: [u8; 16],
     i: usize,
     pc: usize,
-    delay_timer: u8,
+    pub delay_timer: u8,
     sound_timer: u8,
     ram: Vec<u8>,
     stack: Vec<usize>,

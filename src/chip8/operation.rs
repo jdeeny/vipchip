@@ -1,4 +1,4 @@
-use chip8::{ Chip8, Instruction, Word };
+use chip8::{ Chip8, Instruction, Operand };
 
 pub type Operation = fn(&Instruction, &mut Chip8);
 
@@ -55,17 +55,19 @@ pub fn op_xor(inst: &Instruction, core: &mut Chip8) {
 /// Shifts the source right 1 bit, and stores in dest. vF set to old LSB
 pub fn op_shr(inst: &Instruction, core: &mut Chip8) {
   let val = core.load(inst.src());
-  core.vf_store(val & 1 == 1);
+  let carry = (val & 1) == 1;
   let result = val >> 1;
   core.store(inst.dest(), result);
+  core.vf_store(carry);
 }
 
 /// Shifts the source left 1 bit, and stores in dest. vF set to old MSB
 pub fn op_shl(inst: &Instruction, core: &mut Chip8) {
   let val = core.load(inst.src());
-  core.vf_store(val & 0x80 == 0x80);
+  let carry = (val & 0x80) == 0x80;
   let result = (val << 1) & 0xFF;
   core.store(inst.dest(), result);
+  core.vf_store(carry);
 }
 
 
@@ -76,7 +78,7 @@ pub fn op_load(inst: &Instruction, core: &mut Chip8) {
 }
 
 pub fn op_font(inst: &Instruction, core: &mut Chip8) {
-    let addr = core.config.font_addr as u32 + core.load(inst.src());
+    let addr = core.config.font_addr as u32 + core.load(inst.src()) * 5;
     core.store(inst.dest(), addr);
 }
 
@@ -86,6 +88,10 @@ pub fn op_bcd(inst: &Instruction, core: &mut Chip8) {
     let val = val - hundreds * 100;
     let tens = val / 10;
     let ones = val - tens * 10;
+
+    assert!(hundreds < 10);
+    assert!(tens < 10);
+    assert!(ones < 10);
 
     let inital_i = core.i;      //store I so it can be restored
     core.store(inst.dest(), hundreds);
@@ -213,19 +219,27 @@ pub fn op_sprite(inst: &Instruction, core: &mut Chip8) {
 }
 
 pub fn op_stash(inst: &Instruction, core: &mut Chip8) {
-    let last = core.load(inst.src()) as usize;
+    let last = match inst.src() {
+        Operand::Register(r) => r,
+        _ => {panic!("Fetch only works with a register"); },
+    };
     let i = core.i;
     for r in 0...last {
         let value = core.reg(r) as u8;
         core.set_ram(i+r, value);
     }
+    core.i += last + 1;
 }
 
 pub fn op_fetch(inst: &Instruction, core: &mut Chip8) {
-    let last = core.load(inst.src()) as usize;
+    let last = match inst.dest() {
+        Operand::Register(r) => r,
+        _ => {panic!("Fetch only works with a register"); },
+    };
     let i = core.i;
     for r in 0...last {
         let v = core.ram(i+r);
         core.set_reg(r, v);
     }
+    core.i += last + 1;
 }
