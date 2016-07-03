@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
+mod parser;
+
 pub enum LoaderType {
     Auto,
     Hex,
@@ -38,8 +40,11 @@ impl HexLoader {
 impl Loader for HexLoader {
     fn get_bytes(&mut self) -> Vec<u8> {
         let mut program = Vec::new();
-        self.file.read_to_end(&mut program);
-        program
+        self.file.read_to_end(&mut program).unwrap();
+        let p = program.as_slice();
+        let result = parser::parse(p);
+        println!("Parse Result: {:?}", result);
+        result
     }
 }
 
@@ -52,17 +57,17 @@ pub fn load_file(path: &str, loader_type: LoaderType) -> Vec<u8> {
     }
 }
 
-pub fn load_autodetect(mut file: File) -> Box<Loader> {
-    let hex_chars: Vec<u8> = "0123456789abcdefABCDEFxX[], \r\n\t".bytes().collect();
+fn load_autodetect(mut file: File) -> Box<Loader> {
+    let hex_chars: Vec<u8> = "0123456789abcdefABCDEFxX[];, \r\n\t".bytes().collect();
     let mut data = Vec::<u8>::new();
-    file.read_to_end(&mut data);
+    file.read_to_end(&mut data).unwrap();
     let mut binary_data = false;
     for b in data {
-        if hex_chars.contains(&b) {
+        if !hex_chars.contains(&b) {
             binary_data = true;
         }
     }
-    file.seek(SeekFrom::Start(0));
+    file.seek(SeekFrom::Start(0)).unwrap();
     if binary_data {
         BinaryLoader::new(file)
     } else {

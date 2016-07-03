@@ -3,27 +3,30 @@
 #![feature(inclusive_range_syntax)]
 extern crate sdl2;
 extern crate strfmt;
-
+extern crate clap;
+#[macro_use]
+extern crate nom;
 extern crate chip8;
 
 use std::thread;
 use std::sync::mpsc;
 
-use std::collections::HashMap;
-
-
 mod ui;
 mod emulator;
 mod fileio;
 mod programs;
+mod options;
 
 use ui::Ui;
-use chip8::{Simulator, SharedState};
+use chip8::{SharedState};
 use emulator::Emulator;
-
+use options::parse_commandline;
 use chip8::Config;
+use fileio::{load_file, LoaderType};
 
 fn main() {
+
+    let options = parse_commandline();
 
     let mut config = Config::new();
     config.print_instructions = false;
@@ -36,25 +39,22 @@ fn main() {
 
     let ui_state = state.clone();
     let emulator_state = state.clone();
-
     let ui_thread = thread::spawn(move || {
         let mut ui = Ui::new(config, ui_state);
         ui.run();
         tx_ui.send(0).unwrap();
     });
 
-    let programs = programs::examples();
-
-    let mut test_program = programs.get("bench").unwrap().clone();
 
     // let mut test_program = Vec::new();
-    // let mut in_file = File::open("examples/tank.ch8").unwrap();
+
     // let loader = BinaryLoader::new(in_file);
-    // let test_program = load_file("examples/tank.ch8", LoaderType::Auto);
+
+    let test_program = load_file(&options.filename, LoaderType::Auto);
 
     print!("[");
     for b in test_program.iter() {
-        print!("0x{:X}, ", b);
+        print!("0x{:2X}, ", b);
     }
     println!("]");
 
@@ -67,7 +67,6 @@ fn main() {
         tx_emulator.send(()).unwrap();
     });
 
-    // Select between signals from either thread
     select! {
         _ = rx_emulator.recv() => println!("emulator"),
         v = rx_ui.recv() => println!("ui: {}", v.unwrap())
