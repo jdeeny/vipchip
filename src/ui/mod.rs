@@ -5,8 +5,6 @@ use std::thread;
 use chip8::{Config, SharedState};
 
 use self::interface::{Interface, InterfaceSdl2};
-use std::sync::{Arc, RwLock};
-use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
 
@@ -27,6 +25,7 @@ impl Ui {
     }
 
     pub fn run(&mut self) {
+        let park_duration = Duration::new(0, 50);
         let frame_period = Duration::new(0, 1000000000 / 60);
         let mut last_frame = SystemTime::now();
         'running: loop {
@@ -45,7 +44,7 @@ impl Ui {
                 }
                 _ => (),
             }
-            thread::park_timeout_ms(50);
+            thread::park_timeout(park_duration);
         }
     }
 }

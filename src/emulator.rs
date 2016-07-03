@@ -26,7 +26,7 @@ impl Emulator {
     }
 
     pub fn run(&mut self) {
-        let tick = Duration::new(0, 100000 / 60);
+        let tick = Duration::new(0, 1000000000 / 60);
         let cycle_time = None;//Some(Duration::new(0, 100));
 
         let mut last_timer_tick = SystemTime::now();
@@ -40,7 +40,7 @@ impl Emulator {
                         self.core.decrement_timers();
                     }
                 }
-                Err(_) => (),
+                Err(_) => { panic!("no time elapsed")},
             }
 
 
@@ -58,7 +58,7 @@ impl Emulator {
 
             self.num_processed += 1;
             if self.num_processed % 10000000 == 0 {
-                let millions = self.num_processed / 1000000;
+                let millions = self.num_processed as f64 / 1000000.0;
                 let elapsed = self.start_time.elapsed().unwrap();
                 let secs = elapsed.as_secs() as f64;
                 let nanos = elapsed.subsec_nanos() as f64;
@@ -66,7 +66,7 @@ impl Emulator {
                 if total > 0.0f64 {
                     let per_sec = (self.num_processed as f64) / total;
 
-                    println!("{}M in {:.1}s: {:.1} /sec = {:.1} /frame",
+                    println!("{:.1}M in {:.1}s: {:.1} /sec = {:.1} /frame",
                              millions,
                              total,
                              per_sec,
@@ -85,7 +85,7 @@ impl Emulator {
                 None => {}
             }
 
-            // thread::park_timeout(Duration::new(0,50));
+            //thread::park_timeout(Duration::new(0,50));
         }
     }
 }
