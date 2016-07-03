@@ -30,7 +30,7 @@ impl Emulator {
     }
 
     pub fn run(&mut self) {
-        let tick = Duration::new(0, 1000000000 / 60);
+        let tick = Duration::new(0, 100000 / 60);
         let cycle_time = None;//Some(Duration::new(0, 100));
 
         let mut last_timer_tick = SystemTime::now();
@@ -61,8 +61,8 @@ impl Emulator {
             self.core.execute(&instr);
 
             self.num_processed += 1;
-            if self.num_processed % 100000000 == 0 {
-                //panic!{"quit for valgrind"}
+            if self.num_processed % 10000000 == 0 {
+                panic!{"quit for valgrind"}
                 let millions = self.num_processed / 1000000;
                 let elapsed = self.start_time.elapsed().unwrap();
                 let secs = elapsed.as_secs() as f64;
