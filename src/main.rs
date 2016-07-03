@@ -18,8 +18,8 @@ mod fileio;
 mod programs;
 
 use ui::Ui;
-use chip8::{Emulator, SharedState};
-use emulator::Supervisor;
+use chip8::{Simulator, SharedState};
+use emulator::Emulator;
 
 use chip8::Config;
 
@@ -59,11 +59,11 @@ fn main() {
     println!("]");
 
     let emulator_thread = thread::spawn(move || {
-        let mut emu_supervisor = Supervisor::new(config, emulator_state);
+        let mut emulator = Emulator::new(config, emulator_state);
         let load_offset = 0x200;
-        emu_supervisor.core.load_bytes(&test_program, load_offset);
-        emu_supervisor.core.jump_pc(load_offset);
-        emu_supervisor.run();
+        emulator.core.load_bytes(&test_program, load_offset);
+        emulator.core.jump_pc(load_offset);
+        emulator.run();
         tx_emulator.send(()).unwrap();
     });
 

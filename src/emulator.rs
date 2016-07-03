@@ -1,24 +1,23 @@
 use std::thread;
-
-use chip8::{Emulator, SharedState, Instruction, Config};
-
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
+use chip8::{Simulator, SharedState, Instruction, Config};
+
 
 type InstructionOption = Option<Instruction>;
-pub struct Supervisor {
+pub struct Emulator {
     config: Config,
-    pub core: Emulator,
+    pub core: Simulator,
     start_time: SystemTime,
     num_processed: u64,
 }
 
-impl Supervisor {
-    pub fn new(config: Config, state: SharedState) -> Supervisor {
-        let core = Emulator::new(config, state);
+impl Emulator {
+    pub fn new(config: Config, state: SharedState) -> Emulator {
+        let core = Simulator::new(config, state);
 
-        Supervisor {
+        Emulator {
             config: config,
             core: core,
             start_time: SystemTime::now(),
@@ -31,7 +30,7 @@ impl Supervisor {
         let cycle_time = None;//Some(Duration::new(0, 100));
 
         let mut last_timer_tick = SystemTime::now();
-        let mut last_instruction_time = SystemTime::now();
+        let mut last_instruction_time;
 
         'running: loop {
             match last_timer_tick.elapsed() {
@@ -59,7 +58,6 @@ impl Supervisor {
 
             self.num_processed += 1;
             if self.num_processed % 10000000 == 0 {
-                // panic!{"quit for valgrind"}
                 let millions = self.num_processed / 1000000;
                 let elapsed = self.start_time.elapsed().unwrap();
                 let secs = elapsed.as_secs() as f64;
