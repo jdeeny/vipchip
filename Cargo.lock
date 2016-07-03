@@ -2,7 +2,7 @@
 name = "vipchip"
 version = "0.1.0"
 dependencies = [
- "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chip8 0.1.0",
  "sdl2 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "strfmt 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -11,6 +11,14 @@ dependencies = [
 name = "bitflags"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "chip8"
+version = "0.1.0"
+dependencies = [
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strfmt 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "lazy_static"

@@ -1,27 +1,24 @@
 use std::thread;
 
-use chip8::{ Chip8, SharedState, Instruction };
-use config::Config;
+use chip8::{Emulator, SharedState, Instruction, Config};
+
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
 
-
-
 type InstructionOption = Option<Instruction>;
-pub struct Emulator {
+pub struct Supervisor {
     config: Config,
-    pub core: Chip8,
+    pub core: Emulator,
     start_time: SystemTime,
     num_processed: u64,
-
 }
 
-impl Emulator {
-    pub fn new(config: Config, state: SharedState) -> Emulator {
-        let core = Chip8::new(config, state);
+impl Supervisor {
+    pub fn new(config: Config, state: SharedState) -> Supervisor {
+        let core = Emulator::new(config, state);
 
-        Emulator {
+        Supervisor {
             config: config,
             core: core,
             start_time: SystemTime::now(),
@@ -44,7 +41,7 @@ impl Emulator {
                         self.core.decrement_timers();
                     }
                 }
-                Err(_) => ()
+                Err(_) => (),
             }
 
 
@@ -62,16 +59,20 @@ impl Emulator {
 
             self.num_processed += 1;
             if self.num_processed % 10000000 == 0 {
-                panic!{"quit for valgrind"}
+                // panic!{"quit for valgrind"}
                 let millions = self.num_processed / 1000000;
                 let elapsed = self.start_time.elapsed().unwrap();
                 let secs = elapsed.as_secs() as f64;
-                let nanos = elapsed.subsec_nanos()as f64;
-                let total = secs  + nanos / 1000000000.0;
+                let nanos = elapsed.subsec_nanos() as f64;
+                let total = secs + nanos / 1000000000.0;
                 if total > 0.0f64 {
                     let per_sec = (self.num_processed as f64) / total;
 
-                    println!("{}M in {:.1}s: {:.1} /sec = {:.1} /frame", millions, total, per_sec, per_sec / 60.0);
+                    println!("{}M in {:.1}s: {:.1} /sec = {:.1} /frame",
+                             millions,
+                             total,
+                             per_sec,
+                             per_sec / 60.0);
                 }
                 self.num_processed = 0;
                 self.start_time = SystemTime::now();
@@ -82,12 +83,11 @@ impl Emulator {
                     if elapsed < cycle_time {
                         thread::sleep(cycle_time - elapsed);
                     }
-                },
+                }
                 None => {}
             }
 
-            //thread::park_timeout(Duration::new(0,50));
+            // thread::park_timeout(Duration::new(0,50));
         }
     }
-
 }

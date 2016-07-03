@@ -2,13 +2,12 @@ pub mod interface;
 
 use std::thread;
 
-use chip8::{ SharedState };
-use config::Config;
+use chip8::{Config, SharedState};
 
 use self::interface::{Interface, InterfaceSdl2};
 use std::sync::{Arc, RwLock};
 use std::thread::sleep;
-use std::time::{Duration,SystemTime};
+use std::time::{Duration, SystemTime};
 
 
 
@@ -23,7 +22,7 @@ impl Ui {
         Ui {
             config: config,
             state: state,
-            interface: Box::new(InterfaceSdl2::new())
+            interface: Box::new(InterfaceSdl2::new()),
         }
     }
 
@@ -34,7 +33,7 @@ impl Ui {
             {
                 match self.interface.handle_input(&mut self.state) {
                     true => break 'running,
-                    _ => ()
+                    _ => (),
                 }
             }
             match last_frame.elapsed() {
@@ -43,8 +42,8 @@ impl Ui {
                         self.interface.draw_screen(&mut self.state);
                         last_frame += frame_period;
                     }
-                },
-                _ => ()
+                }
+                _ => (),
             }
             thread::park_timeout_ms(50);
         }

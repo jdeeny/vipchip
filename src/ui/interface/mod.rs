@@ -8,7 +8,7 @@ use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 
-use chip8::{SharedState};
+use chip8::SharedState;
 
 
 
@@ -28,15 +28,15 @@ const KEYBOARD_HEIGHT: u32 = BUTTON_HEIGHT * 4 + BUTTON_SEP_HEIGHT * 3;
 
 const KEYBOARD_SEP_WIDTH: u32 = 6;
 
-const WINDOW_WIDTH:u32 = SCREEN_WIDTH + KEYBOARD_SEP_WIDTH + KEYBOARD_WIDTH;
-const WINDOW_HEIGHT:u32 = SCREEN_HEIGHT;
-const KEYBOARD_XOFFSET:u32 = SCREEN_WIDTH + KEYBOARD_SEP_WIDTH;
+const WINDOW_WIDTH: u32 = SCREEN_WIDTH + KEYBOARD_SEP_WIDTH + KEYBOARD_WIDTH;
+const WINDOW_HEIGHT: u32 = SCREEN_HEIGHT;
+const KEYBOARD_XOFFSET: u32 = SCREEN_WIDTH + KEYBOARD_SEP_WIDTH;
 
 
 
 pub trait Interface {
     fn draw_screen(&mut self, state: &mut SharedState);
-    //fn get_key_state(&self) -> [bool; 16];
+    // fn get_key_state(&self) -> [bool; 16];
     fn handle_input(&mut self, state: &mut SharedState) -> bool;
 }
 
@@ -77,7 +77,12 @@ impl InterfaceSdl2 {
                 } else {
                     self.renderer.set_draw_color(Color::RGB(0x00, 0x00, 0x00));
                 }
-                self.renderer.fill_rect(Rect::new((PIXEL_WIDTH as i32) * x, PIXEL_HEIGHT as i32 * y, PIXEL_WIDTH, PIXEL_HEIGHT)).unwrap();
+                self.renderer
+                    .fill_rect(Rect::new((PIXEL_WIDTH as i32) * x,
+                                         PIXEL_HEIGHT as i32 * y,
+                                         PIXEL_WIDTH,
+                                         PIXEL_HEIGHT))
+                    .unwrap();
                 y += 1;
             }
             x += 1;
@@ -104,12 +109,9 @@ impl InterfaceSdl2 {
             }
         }
     }
-
-
 }
 impl Interface for InterfaceSdl2 {
-    fn draw_screen(&mut self, state: &mut SharedState)
-    {
+    fn draw_screen(&mut self, state: &mut SharedState) {
         self.render_vram(&state.vram.read().unwrap().pixels);
         self.draw_ui(state);
         self.renderer.present();
@@ -118,16 +120,16 @@ impl Interface for InterfaceSdl2 {
 
 
 
-    //fn get_key_state(&self) -> [bool; 16] {
+    // fn get_key_state(&self) -> [bool; 16] {
     //    [false; 16]
-    //}
+    // }
 
     fn handle_input(&mut self, state: &mut SharedState) -> bool {
         let mut events = self.sdl_context.event_pump().unwrap();
         for event in events.poll_iter() {
             match event {
-                Event::Quit {..} => return false,
-                _ => ()
+                Event::Quit { .. } => return false,
+                _ => (),
             }
         }
 
@@ -135,28 +137,61 @@ impl Interface for InterfaceSdl2 {
 
         for scancode in events.keyboard_state().pressed_scancodes() {
             match scancode {
-                Scancode::Backspace => { return true; },
-                Scancode::Num1 => { key_state[0x1] = true; },
-                Scancode::Num2 => { key_state[0x2] = true; },
-                Scancode::Num3 => { key_state[0x3] = true; },
-                Scancode::Num4 => { key_state[0xC] = true; },
-                Scancode::Q => { key_state[0x4] = true; },
-                Scancode::W => { key_state[0x5] = true; },
-                Scancode::E => { key_state[0x6] = true; },
-                Scancode::R => { key_state[0xD] = true; },
-                Scancode::A => { key_state[0x7] = true; },
-                Scancode::S => { key_state[0x8] = true; },
-                Scancode::D => { key_state[0x9] = true; },
-                Scancode::F => { key_state[0xE] = true; },
-                Scancode::Z => { key_state[0xA] = true; },
-                Scancode::X => { key_state[0x0] = true; },
-                Scancode::C => { key_state[0xB] = true; },
-                Scancode::V => { key_state[0xF] = true; },
-                _ => ()
+                Scancode::Backspace => {
+                    return true;
+                }
+                Scancode::Num1 => {
+                    key_state[0x1] = true;
+                }
+                Scancode::Num2 => {
+                    key_state[0x2] = true;
+                }
+                Scancode::Num3 => {
+                    key_state[0x3] = true;
+                }
+                Scancode::Num4 => {
+                    key_state[0xC] = true;
+                }
+                Scancode::Q => {
+                    key_state[0x4] = true;
+                }
+                Scancode::W => {
+                    key_state[0x5] = true;
+                }
+                Scancode::E => {
+                    key_state[0x6] = true;
+                }
+                Scancode::R => {
+                    key_state[0xD] = true;
+                }
+                Scancode::A => {
+                    key_state[0x7] = true;
+                }
+                Scancode::S => {
+                    key_state[0x8] = true;
+                }
+                Scancode::D => {
+                    key_state[0x9] = true;
+                }
+                Scancode::F => {
+                    key_state[0xE] = true;
+                }
+                Scancode::Z => {
+                    key_state[0xA] = true;
+                }
+                Scancode::X => {
+                    key_state[0x0] = true;
+                }
+                Scancode::C => {
+                    key_state[0xB] = true;
+                }
+                Scancode::V => {
+                    key_state[0xF] = true;
+                }
+                _ => (),
             }
         }
         state.keys.write().unwrap().state = key_state;
         false
     }
-
 }

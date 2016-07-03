@@ -16,9 +16,7 @@ pub struct BinaryLoader {
 }
 impl BinaryLoader {
     fn new(file: File) -> Box<Loader> {
-        Box::new(BinaryLoader {
-            file: file,
-        })
+        Box::new(BinaryLoader { file: file })
     }
 }
 impl Loader for BinaryLoader {
@@ -34,9 +32,7 @@ pub struct HexLoader {
 }
 impl HexLoader {
     fn new(mut file: File) -> Box<Loader> {
-        Box::new(HexLoader {
-            file: file,
-        })
+        Box::new(HexLoader { file: file })
     }
 }
 impl Loader for HexLoader {
@@ -62,7 +58,9 @@ pub fn load_autodetect(mut file: File) -> Box<Loader> {
     file.read_to_end(&mut data);
     let mut binary_data = false;
     for b in data {
-        if hex_chars.contains(&b) { binary_data = true; }
+        if hex_chars.contains(&b) {
+            binary_data = true;
+        }
     }
     file.seek(SeekFrom::Start(0));
     if binary_data {
