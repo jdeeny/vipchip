@@ -5,15 +5,6 @@ authors = ["jdeeny"]
 publish = false
 
 [dependencies]
-#piston_window = "0.47.2"
-#piston2d-gfx_graphics = "0.28.0"
-#gfx = "0.11.0"
-#gfx_device_gl = "0.10.0"
-#find_folder = "0.3.0"
-#rand = "*"
-#fps_counter = "0.2.0"
-#debug_macros = "0.0.1"
 sdl2 = "*"
-#sdl2_ttf = "*"
 strfmt = "*"
 chip8 = { path = "../chip8", version = "0.1.0" }
