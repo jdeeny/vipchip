@@ -27,7 +27,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "chip8"
 version = "0.1.0"
-source = "git+https://github.com/jdeeny/rust-chip8.git#a15c7ad7e11bf8e6d0bcfcf3920c3316d70d8311"
+source = "git+https://github.com/jdeeny/rust-chip8.git#753d310b17ed1d66c77727232382378e9ccf7aa4"
 dependencies = [
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "strfmt 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
