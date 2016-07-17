@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use sdl2;
 use sdl2::{Sdl, VideoSubsystem};
 use sdl2::render::Renderer;
@@ -8,7 +6,7 @@ use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 
-use chip8::SharedState;
+use chip8::{Vram, Keyboard, Simulate};
 
 
 
@@ -24,6 +22,7 @@ const BUTTON_SEP_WIDTH: u32 = 3;
 const BUTTON_SEP_HEIGHT: u32 = BUTTON_SEP_WIDTH;
 
 const KEYBOARD_WIDTH: u32 = BUTTON_WIDTH * 4 + BUTTON_SEP_WIDTH * 3;
+#[allow(dead_code)]
 const KEYBOARD_HEIGHT: u32 = BUTTON_HEIGHT * 4 + BUTTON_SEP_HEIGHT * 3;
 
 const KEYBOARD_SEP_WIDTH: u32 = 6;
@@ -35,9 +34,8 @@ const KEYBOARD_XOFFSET: u32 = SCREEN_WIDTH + KEYBOARD_SEP_WIDTH;
 
 
 pub trait Interface {
-    fn draw_screen(&mut self, state: &mut SharedState);
-    // fn get_key_state(&self) -> [bool; 16];
-    fn handle_input(&mut self, state: &mut SharedState) -> bool;
+    fn draw_screen(&mut self, sim: &Simulate);
+    fn handle_input(&mut self, sim: &mut Simulate) -> bool;
 }
 
 
@@ -67,35 +65,36 @@ impl InterfaceSdl2 {
         }
 
     }
-    fn render_vram(&mut self, pixels: &[[u8; 32]; 64]) {
+    fn render_vram(&mut self, vram: &Vram){ //pixels: &[[u8; 32]; 64]) {
         let mut x = 0;
-        for col in pixels.iter() {
-            let mut y = 0;
-            for dot in col.iter() {
-                if *dot > 0 {
-                    self.renderer.set_draw_color(Color::RGB(0xf0, 0xF0, 0xF0));
-                } else {
-                    self.renderer.set_draw_color(Color::RGB(0x00, 0x00, 0x00));
-                }
-                self.renderer
-                    .fill_rect(Rect::new((PIXEL_WIDTH as i32) * x,
-                                         PIXEL_HEIGHT as i32 * y,
-                                         PIXEL_WIDTH,
-                                         PIXEL_HEIGHT))
-                    .unwrap();
+        let mut y = 0;
+        for dot in vram.iter() {
+            if *dot > 0 {
+                self.renderer.set_draw_color(Color::RGB(0xf0, 0xF0, 0xF0));
+            } else {
+                self.renderer.set_draw_color(Color::RGB(0x00, 0x00, 0x00));
+            }
+            self.renderer
+                .fill_rect(Rect::new((PIXEL_WIDTH as i32) * x,
+                                     PIXEL_HEIGHT as i32 * y,
+                                     PIXEL_WIDTH,
+                                     PIXEL_HEIGHT))
+                .unwrap();
+            x += 1;
+            if x > 64 {
+                x = 0;
                 y += 1;
             }
-            x += 1;
         }
     }
 
 
-    fn draw_ui(&mut self, state: &mut SharedState) {
-        let keys = *state.keys.read().unwrap();
+    fn draw_ui(&mut self, keyboard: &Keyboard) {
+        let keys = *keyboard;
         let mut i = 0;
         for y in 0..4 {
             for x in 0..4 {
-                if keys.is_down(i) {
+                if keys[i] == true {
                     self.renderer.set_draw_color(Color::RGB(0xf0, 0xF0, 0xF0));
                 } else {
                     self.renderer.set_draw_color(Color::RGB(0x60, 0x60, 0x60));
@@ -111,9 +110,9 @@ impl InterfaceSdl2 {
     }
 }
 impl Interface for InterfaceSdl2 {
-    fn draw_screen(&mut self, state: &mut SharedState) {
-        self.render_vram(&state.vram.read().unwrap().pixels);
-        self.draw_ui(state);
+    fn draw_screen(&mut self, sim: &Simulate) {
+        self.render_vram(&sim.vram().unwrap());
+        self.draw_ui(&sim.keyboard().unwrap());
         self.renderer.present();
     }
 
@@ -124,7 +123,7 @@ impl Interface for InterfaceSdl2 {
     //    [false; 16]
     // }
 
-    fn handle_input(&mut self, state: &mut SharedState) -> bool {
+    fn handle_input(&mut self, sim: &mut Simulate) -> bool {
         let mut events = self.sdl_context.event_pump().unwrap();
         for event in events.poll_iter() {
             match event {
@@ -191,7 +190,7 @@ impl Interface for InterfaceSdl2 {
                 _ => (),
             }
         }
-        state.keys.write().unwrap().state = key_state;
+        sim.set_keyboard(&key_state);
         false
     }
 }

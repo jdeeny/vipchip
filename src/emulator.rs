@@ -1,21 +1,22 @@
 use std::thread;
-use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-use chip8::{Simulator, SharedState, Instruction, Config};
+use chip8::Config;
+use chip8::instruction::Instruction;
+use chip8::{ SimulatorTask, Simulate };
 
 
 type InstructionOption = Option<Instruction>;
 pub struct Emulator {
     config: Config,
-    pub core: Simulator,
+    pub core: SimulatorTask,
     start_time: SystemTime,
     num_processed: u64,
 }
 
 impl Emulator {
-    pub fn new(config: Config, state: SharedState) -> Emulator {
-        let core = Simulator::new(config, state);
+    pub fn new(config: Config) -> Emulator {
+        let core = SimulatorTask::spawn(config);
 
         Emulator {
             config: config,
@@ -50,10 +51,10 @@ impl Emulator {
             self.core.advance_pc();
 
             let instr = self.core.decode_instruction(codeword);
-            if self.config.print_instructions {
+/*            if self.config.print_instructions {
                 print!("0x{:04X}: {}   ", pc, instr.to_string());
                 self.core.dump_reg();
-            }
+            }*/
             self.core.execute(&instr);
 
             self.num_processed += 1;

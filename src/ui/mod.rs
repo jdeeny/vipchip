@@ -2,7 +2,8 @@ pub mod interface;
 
 use std::thread;
 
-use chip8::{Config, SharedState};
+use chip8::Config;
+use chip8::{SimulatorTask, Simulate};
 
 use self::interface::{Interface, InterfaceSdl2};
 use std::time::{Duration, SystemTime};
@@ -10,16 +11,14 @@ use std::time::{Duration, SystemTime};
 
 
 pub struct Ui {
-    config: Config,
-    state: SharedState,
+    simulator: SimulatorTask,
     interface: Box<Interface>,
 }
 
 impl Ui {
-    pub fn new(config: Config, state: SharedState) -> Ui {
+    pub fn new(simulator: SimulatorTask) -> Ui {
         Ui {
-            config: config,
-            state: state,
+            simulator: simulator,
             interface: Box::new(InterfaceSdl2::new()),
         }
     }
@@ -30,7 +29,7 @@ impl Ui {
         let mut last_frame = SystemTime::now();
         'running: loop {
             {
-                match self.interface.handle_input(&mut self.state) {
+                match self.interface.handle_input(&mut self.simulator) {
                     true => break 'running,
                     _ => (),
                 }
@@ -38,7 +37,7 @@ impl Ui {
             match last_frame.elapsed() {
                 Ok(elapsed) => {
                     if elapsed > frame_period {
-                        self.interface.draw_screen(&mut self.state);
+                        self.interface.draw_screen(&self.simulator);
                         last_frame += frame_period;
                     }
                 }
