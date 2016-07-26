@@ -68,6 +68,7 @@ impl InterfaceSdl2 {
     fn render_vram(&mut self, vram: &Vram){ //pixels: &[[u8; 32]; 64]) {
         let mut x = 0;
         let mut y = 0;
+        //println!("{:?}", vram);
         for dot in vram.iter() {
             if *dot > 0 {
                 self.renderer.set_draw_color(Color::RGB(0xf0, 0xF0, 0xF0));
@@ -81,7 +82,7 @@ impl InterfaceSdl2 {
                                      PIXEL_HEIGHT))
                 .unwrap();
             x += 1;
-            if x > 64 {
+            if x >= 64 {
                 x = 0;
                 y += 1;
             }

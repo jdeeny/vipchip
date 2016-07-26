@@ -41,7 +41,8 @@ fn main() {
     let ui_state = state.clone();
     let emulator_state = state.clone();*/
 
-    let simulator_task = SimulatorTask::spawn(COSMAC_VIP);
+    let mut simulator_task = SimulatorTask::spawn(COSMAC_VIP);
+    simulator_task.load_program(&test_program);
 
     let ui_thread = thread::spawn(move || {
         let mut ui = Ui::new(simulator_task);

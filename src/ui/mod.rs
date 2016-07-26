@@ -24,7 +24,7 @@ impl Ui {
     }
 
     pub fn run(&mut self) {
-        let park_duration = Duration::new(0, 50);
+        let park_duration = Duration::new(0, 5);
         let frame_period = Duration::new(0, 1000000000 / 60);
         let mut last_frame = SystemTime::now();
         'running: loop {
@@ -39,11 +39,13 @@ impl Ui {
                     if elapsed > frame_period {
                         self.interface.draw_screen(&self.simulator);
                         last_frame += frame_period;
+                        self.simulator.timer_tick().unwrap();
                     }
                 }
                 _ => (),
             }
             thread::park_timeout(park_duration);
+            self.simulator.step_n(10).unwrap();
         }
     }
 }
