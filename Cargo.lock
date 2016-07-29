@@ -2,7 +2,7 @@
 name = "vipchip"
 version = "0.1.0"
 dependencies = [
- "chip8 0.2.0 (git+https://github.com/jdeeny/rust-chip8.git)",
+ "chip8 0.2.1 (git+https://github.com/jdeeny/rust-chip8.git)",
  "clap 2.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -26,8 +26,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "chip8"
-version = "0.2.0"
-source = "git+https://github.com/jdeeny/rust-chip8.git#2f22c0664ccb269ed7df3e8f4fc1610c9315b0b5"
+version = "0.2.1"
+source = "git+https://github.com/jdeeny/rust-chip8.git#58edb3a196d85469eaf997b6d9223888bd456632"
 dependencies = [
  "drawbytes 0.1.0 (git+https://github.com/jdeeny/drawbytes.git)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",

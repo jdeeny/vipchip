@@ -1,5 +1,5 @@
 use sdl2;
-use sdl2::{Sdl, VideoSubsystem};
+use sdl2::Sdl;
 use sdl2::render::Renderer;
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
@@ -42,14 +42,13 @@ pub trait Interface {
 #[allow(unused_variables)]
 pub struct InterfaceSdl2 {
     sdl_context: Sdl,
-    video_subsys: VideoSubsystem,
     renderer: Renderer<'static>,
 }
 impl InterfaceSdl2 {
     pub fn new() -> InterfaceSdl2 {
         let sdl_context = sdl2::init().unwrap();
         let video_subsys = sdl_context.video().unwrap();
-        let window = video_subsys.window("chipr", WINDOW_WIDTH, WINDOW_HEIGHT)
+        let window = video_subsys.window("vipchip", WINDOW_WIDTH, WINDOW_HEIGHT)
             .position_centered()
             .opengl()
             .build()
@@ -60,15 +59,15 @@ impl InterfaceSdl2 {
 
         InterfaceSdl2 {
             sdl_context: sdl_context,
-            video_subsys: video_subsys,
             renderer: renderer,
         }
 
     }
-    fn render_vram(&mut self, vram: &Vram){ //pixels: &[[u8; 32]; 64]) {
+    fn render_vram(&mut self, vram: &Vram) {
+        // pixels: &[[u8; 32]; 64]) {
         let mut x = 0;
         let mut y = 0;
-        //println!("{:?}", vram);
+        // println!("{:?}", vram);
         for dot in vram.iter() {
             if *dot > 0 {
                 self.renderer.set_draw_color(Color::RGB(0xf0, 0xF0, 0xF0));
@@ -117,13 +116,6 @@ impl Interface for InterfaceSdl2 {
         self.renderer.present();
     }
 
-
-
-
-    // fn get_key_state(&self) -> [bool; 16] {
-    //    [false; 16]
-    // }
-
     fn handle_input(&mut self, sim: &mut Simulate) -> bool {
         let mut events = self.sdl_context.event_pump().unwrap();
         for event in events.poll_iter() {
@@ -137,7 +129,7 @@ impl Interface for InterfaceSdl2 {
 
         for scancode in events.keyboard_state().pressed_scancodes() {
             match scancode {
-                Scancode::Backspace => {
+                Scancode::Backspace | Scancode::Escape => {
                     return true;
                 }
                 Scancode::Num1 => {

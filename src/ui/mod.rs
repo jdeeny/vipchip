@@ -2,7 +2,6 @@ pub mod interface;
 
 use std::thread;
 
-use chip8::Config;
 use chip8::{SimulatorTask, Simulate};
 
 use self::interface::{Interface, InterfaceSdl2};

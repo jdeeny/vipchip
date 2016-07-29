@@ -5,7 +5,9 @@ mod parser;
 
 pub enum LoaderType {
     Auto,
+    #[allow(dead_code)]
     Hex,
+    #[allow(dead_code)]
     Binary,
 }
 
@@ -24,7 +26,7 @@ impl BinaryLoader {
 impl Loader for BinaryLoader {
     fn get_bytes(&mut self) -> Vec<u8> {
         let mut program = Vec::new();
-        self.file.read_to_end(&mut program);
+        self.file.read_to_end(&mut program).unwrap();
         program
     }
 }
@@ -33,7 +35,7 @@ pub struct HexLoader {
     file: File,
 }
 impl HexLoader {
-    fn new(mut file: File) -> Box<Loader> {
+    fn new(file: File) -> Box<Loader> {
         Box::new(HexLoader { file: file })
     }
 }
