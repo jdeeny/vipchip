@@ -2,11 +2,9 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 
 use chip8::Config;
-use chip8::instruction::Instruction;
 use chip8::{ SimulatorTask, Simulate };
 
 
-type InstructionOption = Option<Instruction>;
 pub struct Emulator {
     config: Config,
     pub core: SimulatorTask,
